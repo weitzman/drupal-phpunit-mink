@@ -200,7 +200,7 @@ abstract class BrowserTestBase extends RunnerTestBase {
    *   form, which is typically the same thing but with hyphens replacing the
    *   underscores.
    */
-  protected function drupalSubmitForm($edit, $submit, $form_html_id = NULL) {
+  protected function submitForm($edit, $submit, $form_html_id = NULL) {
     $session = $this->getSession();
     $page = $session->getPage();
 
