@@ -114,48 +114,6 @@ abstract class BrowserTestBase extends RunnerTestBase {
   }
 
   /**
-   * Helper function to check and retrieve specified element.
-   *
-   * @param string $selector
-   *   Selector type (ie. css or xpath).
-   * @param string $locator
-   *   Element selector locator.
-   * @param Element $container
-   *   (optional) Container element to check against. Defaults to current page.
-   *
-   * @return NodeElement
-   *   The NodeElement if found, FALSE otherwise.
-   */
-  protected function elementExists($selector, $locator, Element $container = NULL) {
-    $container = $container ?: $this->getSession()->getPage();
-    $node = $container->find($selector, $locator);
-    if ($node === null) {
-      $this->fail(String::format('Unable to find element with @selector selector of @locator', array('@selector' => $selector, '@locator' => $locator)));
-    }
-    return $node;
-  }
-
-  /**
-   * Helper function to check and retreive a button.
-   *
-   * @param string $button
-   *   Button locator.
-   * @param Element $container
-   *   Container to search button for.
-   *
-   * @return NodeElement|NULL
-   *   The button element if found, NULL otherwise.
-   */
-  protected function buttonExists($button, Element $container = NULL) {
-    $container = $container ?: $this->getSession()->getPage();
-    $node = $container->findButton($button);
-    if ($node === null) {
-      $this->fail(String::format('Unable to find button @button', array('@button' => $button)));
-    }
-    return $node;
-  }
-
-  /**
    * Log in a user with the internal browser.
    *
    * If a user is already logged in, then the current user is logged out before
@@ -228,257 +186,43 @@ abstract class BrowserTestBase extends RunnerTestBase {
   }
 
   /**
-   * Asserts the page responds with the specified response code.
+   * Helper function to check and retrieve specified element.
    *
-   * @param $code
-   *   Response code. For example 200 is a successful page request. For a list
-   *   of all codes see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html.
-   * @param $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Browser'; most tests do not override
-   *   this default.
+   * @param string $selector
+   *   Selector type (ie. css or xpath).
+   * @param string $locator
+   *   Element selector locator.
+   * @param Element $container
+   *   (optional) Container element to check against. Defaults to current page.
    *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   * @return NodeElement
+   *   The NodeElement if found, FALSE otherwise.
    */
-  protected function assertResponseStatus($code, $message = '', $group = 'Browser') {
-    $status_code = $this->getSession()->getStatusCode();
-    $match = is_array($code) ? in_array($status_code, $code) : $status_code == $code;
-    return $this->assertTrue($match, $message ? $message : String::format('HTTP response expected !code, actual !status_code', array('!code' => $code, '!status_code' => $status_code)), $group);
+  protected function elementExists($selector, $locator, Element $container = NULL) {
+    $container = $container ?: $this->getSession()->getPage();
+    $node = $container->find($selector, $locator);
+    $message = sprintf("Unable to find element with %s selector of %s", $selector, $locator);
+    $this->assertNotNull($node, $message);
+    return $node;
   }
 
   /**
-   * Asserts the page does not responds with the specified response code.
+   * Helper function to check and retrieve a button.
    *
-   * @param $code
-   *   Response code. For example 200 is a successful page request. For a list
-   *   of all codes see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html.
-   * @param $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Browser'; most tests do not override
-   *   this default.
+   * @param string $button
+   *   Button locator.
+   * @param Element $container
+   *   Container to search button for.
    *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   * @return NodeElement|NULL
+   *   The button element if found, NULL otherwise.
    */
-  protected function assertResponseStatusIsNot($code, $message = '', $group = 'Browser') {
-    $status_code = $this->getSession()->getStatusCode();
-    $match = is_array($code) ? in_array($status_code, $code) : $status_code == $code;
-    return $this->assertTrue($match, $message ? $message : String::format('HTTP response expected !code, actual !status_code', array('!code' => $code, '!status_code' => $status_code)), $group);
-  }
-
-  /**
-   * Asserts that an elements exists on the current page.
-   *
-   * @param string $xpath
-   *   xpath selector used to find the element.
-   * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
-   */
-  protected function assertElementExists($xpath, $message = '', $group = 'Other') {
-    return $this->assertNotNull($this->getSession()->getPage()->find('xpath', $xpath), $message, $group);
-  }
-
-  /**
-   * Asserts that an elements does not exist on the current page.
-   *
-   * @param string $xpath
-   *   xpath selector used to find the element.
-   * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
-   */
-  protected function assertElementNotExists($xpath, $message = '', $group = 'Other') {
-    return $this->assertNull($this->getSession()->getPage()->find('xpath', $xpath), $message, $group);
-  }
-
-  /**
-   * Asserts that a field exists with the given name or ID.
-   *
-   * @param string $field
-   *   Name, ID, or Label of field to assert.
-   * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
-   */
-  protected function assertFieldExists($field, $message = '', $group = 'Other') {
-    return $this->assertTrue($this->getSession()->getPage()->hasField($field), $message, $group);
-  }
-
-  /**
-   * Asserts that a field does not exist with the given name or ID.
-   *
-   * @param string $field
-   *   Name, ID, or Label of field to assert.
-   * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
-   */
-  protected function assertFieldNotExists($field, $message = '', $group = 'Other') {
-    return $this->assertFalse($this->getSession()->getPage()->hasField($field), $message, $group);
-  }
-
-  /**
-   * Assert that the element contains text.
-   *
-   * @param NodeElement|string $element
-   *   The element to check.
-   * @param string $text
-   *   Text to be contained in the element.
-   * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
-   */
-  protected function assertElementTextContains($element, $text, $message = '', $group = 'Other') {
-    if (is_string($element)) {
-      $element = $this->elementExists('xpath', $element);
-    }
-    $actual = $element->getText();
-    $regex = '/' . preg_quote($text, '/') . '/ui';
-    return $this->assertTrue(preg_match($regex, $actual), $message, $group);
-  }
-
-  /**
-   * Assert that the element does not contain text.
-   *
-   * @param NodeElement|string $element
-   *   The element to check.
-   * @param string $text
-   *   Text to not be contained in element.
-   * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
-   */
-  protected function assertElementTextNotContains($element, $text, $message = '', $group = 'Other') {
-    if (is_string($element)) {
-      $element = $this->elementExists('xpath', $element);
-    }
-    $actual = $element->getText();
-    $regex = '/' . preg_quote($text, '/') . '/ui';
-    return $this->assertFalse(preg_match($regex, $actual), $message, $group);
-  }
-
-  /**
-   * Assert that the element contains html.
-   *
-   * @param NodeElement|string $element
-   *   The element to check.
-   * @param string $html
-   *   HTML to be contained in the element.
-   * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
-   */
-  protected function assertElementContains($element, $html, $message = '', $group = 'Other') {
-    if (is_string($element)) {
-      $element = $this->elementExists('xpath', $element);
-    }
-    $actual = $element->getHtml();
-    $regex = '/' . preg_quote($html, '/') . '/ui';
-    return $this->assertTrue(preg_match($regex, $actual), $message, $group);
-  }
-
-  /**
-   * Assert that the element does not contain html.
-   *
-   * @param NodeElement|string $element
-   *   The element to check.
-   * @param string $html
-   *   HTML to not be contained in element.
-   * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
-   */
-  protected function assertElementNotContains($element, $html, $message = '', $group = 'Other') {
-    if (is_string($element)) {
-      $element = $this->elementExists('xpath', $element);
-    }
-    $actual = $element->getHtml();
-    $regex = '/' . preg_quote($html, '/') . '/ui';
-    return $this->assertTrue(!preg_match($regex, $actual), $message, $group);
+  protected function buttonExists($button, Element $container = NULL) {
+    $container = $container ?: $this->getSession()->getPage();
+    $node = $container->findButton($button);
+    $message = sprintf("Unable to find button %s", $button);
+    $this->assertNotNull($node, $message);
+    return $node;
   }
 
   /**
@@ -495,10 +239,239 @@ abstract class BrowserTestBase extends RunnerTestBase {
   protected function fieldExists($field, Element $container = NULL) {
     $container = $container ?: $this->getSession()->getPage();
     $node = $container->findField($field);
-    if ($node === null) {
-      $this->fail(String::format('Unable to find field with name|id|label of @field', array('@field' => $field)));
-    }
+    $message = sprintf("Unable to find field with name|id|label of %s", $field);
+    $this->assertNotNull($node, $message);
     return $node;
+  }
+
+  /**
+   * Helper function to check and retrieve specified select field.
+   *
+   * @param string $select
+   *   Name, ID, or Label of select field to assert.
+   * @param Element $container
+   *   (optional) Container element to check against. Defaults to current page.
+   *
+   * @return NodeElement
+   *   The NodeElement if found, FALSE otherwise.
+   */
+  protected function selectExists($select, Element $container = NULL) {
+    $container = $container ?: $this->getSession()->getPage();
+    $node = $container->find('named', array(
+      'select', $this->getSession()->getSelectorsHandler()->xpathLiteral($select)
+    ));
+    $message = sprintf("Unable to find select with name|id|label of %s", $select);
+    $this->assertNotNull($node, $message);
+    return $node;
+  }
+
+  /**
+   * Helper function to get the options of select field.
+   *
+   * @param NodeElement|string $select
+   *   Name, ID, or Label of select field to assert.
+   * @param Element $container
+   *   (optional) Container element to check against. Defaults to current page.
+   *
+   * @return array
+   *   Associative array of option keys and values.
+   */
+  protected function getOptions($select, Element $container = NULL) {
+    if (is_string($select)) {
+      $select = $this->selectExists($select, $container);
+    }
+    $options = [];
+    /** @var NodeElement $option */
+    foreach ($select->findAll('xpath', '//option') as $option) {
+      $label = $option->getText();
+      $value = $option->getAttribute('value') ?: $label;
+      $options[$value] = $label;
+    }
+    return $options;
+  }
+
+  /**
+   * Asserts the page responds with the specified response code.
+   *
+   * @param int $code
+   *   Response code. For example 200 is a successful page request. For a list
+   *   of all codes see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html.
+   * @param string $message
+   *   (optional) A message to display with the assertion.
+   */
+  protected function assertResponseStatus($code, $message = '') {
+    $status_code = $this->getSession()->getStatusCode();
+    $match = is_array($code) ? in_array($status_code, $code) : $status_code == $code;
+    if ($message == '') {
+      $message = sprintf('Response code %d was expected, but got %d.', $code, $status_code);
+    }
+    $this->assertTrue($match, $message);
+  }
+
+  /**
+   * Asserts the page does not responds with the specified response code.
+   *
+   * @param int $code
+   *   Response code. For example 200 is a successful page request. For a list
+   *   of all codes see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html.
+   * @param $message
+   *   (optional) A message to display with the assertion.
+   */
+  protected function assertResponseStatusIsNot($code, $message = '') {
+    $status_code = $this->getSession()->getStatusCode();
+    $match = is_array($code) ? in_array($status_code, $code) : $status_code == $code;
+    if ($message == '') {
+      $message = sprintf('Response code %d was not expected.', $status_code);
+    }
+    $this->assertFalse($match, $message);
+  }
+
+  /**
+   * Asserts that an elements exists on the current page.
+   *
+   * @param string $xpath
+   *   xpath selector used to find the element.
+   * @param string $message
+   *   (optional) A message to display with the assertion.
+   */
+  protected function assertElementExists($xpath, $message = '') {
+    if ($message == '') {
+      $message = sprintf('Element "%s" was expected.', $xpath);
+    }
+    $this->assertNotNull($this->getSession()->getPage()->find('xpath', $xpath), $message);
+  }
+
+  /**
+   * Asserts that an elements does not exist on the current page.
+   *
+   * @param string $xpath
+   *   xpath selector used to find the element.
+   * @param string $message
+   *   (optional) A message to display with the assertion.
+   */
+  protected function assertElementNotExists($xpath, $message = '') {
+    if ($message == '') {
+      $message = sprintf('Element "%s" was not expected.', $xpath);
+    }
+    $this->assertNull($this->getSession()->getPage()->find('xpath', $xpath), $message);
+  }
+
+  /**
+   * Asserts that a field exists with the given name or ID.
+   *
+   * @param string $field
+   *   Name, ID, or Label of field to assert.
+   * @param string $message
+   *   (optional) A message to display with the assertion.
+   */
+  protected function assertFieldExists($field, $message = '') {
+    if ($message == '') {
+      $message = sprintf('Field "%s" was expected.', $field);
+    }
+    $this->assertTrue($this->getSession()->getPage()->hasField($field), $message);
+  }
+
+  /**
+   * Asserts that a field does not exist with the given name or ID.
+   *
+   * @param string $field
+   *   Name, ID, or Label of field to assert.
+   * @param string $message
+   *   (optional) A message to display with the assertion.
+   */
+  protected function assertFieldNotExists($field, $message = '') {
+    if ($message == '') {
+      $message = sprintf('Field "%s" was not expected.', $field);
+    }
+    $this->assertFalse($this->getSession()->getPage()->hasField($field), $message);
+  }
+
+  /**
+   * Assert that the element contains text.
+   *
+   * @param NodeElement|string $element
+   *   The element to check.
+   * @param string $text
+   *   Text to be contained in the element.
+   * @param string $message
+   *   (optional) A message to display with the assertion.
+   */
+  protected function assertElementTextContains($element, $text, $message = '') {
+    if (is_string($element)) {
+      $element = $this->elementExists('xpath', $element);
+    }
+    $actual = $element->getText();
+    $regex = '/' . preg_quote($text, '/') . '/ui';
+    if ($message == '') {
+      $message = sprintf('Element "%s" was expected to contain text "%s".', $element->getXpath(), $text);
+    }
+    $this->assertRegExp($regex, $actual, $message);
+  }
+
+  /**
+   * Assert that the element does not contain text.
+   *
+   * @param NodeElement|string $element
+   *   The element to check.
+   * @param string $text
+   *   Text to not be contained in element.
+   * @param string $message
+   *   (optional) A message to display with the assertion.
+   */
+  protected function assertElementTextNotContains($element, $text, $message = '') {
+    if (is_string($element)) {
+      $element = $this->elementExists('xpath', $element);
+    }
+    $actual = $element->getText();
+    $regex = '/' . preg_quote($text, '/') . '/ui';
+    if ($message == '') {
+      $message = sprintf('Element "%s" was not expected to contain text "%s".', $element->getXpath(), $text);
+    }
+    $this->assertNotRegExp($regex, $actual, $message);
+  }
+
+  /**
+   * Assert that the element contains html.
+   *
+   * @param NodeElement|string $element
+   *   The element to check.
+   * @param string $html
+   *   HTML to be contained in the element.
+   * @param string $message
+   *   (optional) A message to display with the assertion.
+   */
+  protected function assertElementContains($element, $html, $message = '') {
+    if (is_string($element)) {
+      $element = $this->elementExists('xpath', $element);
+    }
+    $actual = $element->getHtml();
+    $regex = '/' . preg_quote($html, '/') . '/ui';
+    if ($message == '') {
+      $message = sprintf('Element "%s" was expected to contain html "%s".', $element->getXpath(), $html);
+    }
+    $this->assertRegExp($regex, $actual, $message);
+  }
+
+  /**
+   * Assert that the element does not contain html.
+   *
+   * @param NodeElement|string $element
+   *   The element to check.
+   * @param string $html
+   *   HTML to not be contained in element.
+   * @param string $message
+   *   (optional) A message to display with the assertion.
+   */
+  protected function assertElementNotContains($element, $html, $message = '') {
+    if (is_string($element)) {
+      $element = $this->elementExists('xpath', $element);
+    }
+    $actual = $element->getHtml();
+    $regex = '/' . preg_quote($html, '/') . '/ui';
+    if ($message == '') {
+      $message = sprintf('Element "%s" was not expected to contain html "%s".', $element->getXpath(), $html);
+    }
+    $this->assertNotRegExp($regex, $actual, $message);
   }
 
   /**
@@ -509,25 +482,18 @@ abstract class BrowserTestBase extends RunnerTestBase {
    * @param string $value
    *   Value of field to equal.
    * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   *   (optional) A message to display with the assertion.
    */
-  protected function assertFieldValueEquals($field, $value, $message = '', $group = 'Other') {
+  protected function assertFieldValueEquals($field, $value, $message = '') {
     if (is_string($field)) {
       $field = $this->fieldExists($field);
     }
     $actual = $field->getValue();
     $regex = '/^' . preg_quote($value, '/') . '/ui';
-    return $this->assertTrue(preg_match($regex, $actual), $message, $group);
+    if ($message == '') {
+      $message = sprintf('Field "%s" was expected to have value "%s" but has "%s".', $field->getXpath(), $value, $actual);
+    }
+    $this->assertRegExp($regex, $actual, $message);
   }
 
   /**
@@ -538,25 +504,18 @@ abstract class BrowserTestBase extends RunnerTestBase {
    * @param string $value
    *   Value the field should not equal.
    * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   *   (optional) A message to display with the assertion.
    */
-  protected function assertFieldValueNotEquals($field, $value, $message = '', $group = 'Other') {
+  protected function assertFieldValueNotEquals($field, $value, $message = '') {
     if (is_string($field)) {
       $field = $this->fieldExists($field);
     }
     $actual = $field->getValue();
     $regex = '/^' . preg_quote($value, '/') . '/ui';
-    return $this->assertFalse(preg_match($regex, $actual), $message, $group);
+    if ($message == '') {
+      $message = sprintf('Field "%s" was not expected to have value "%s" but has "%s".', $field->getXpath(), $value, $actual);
+    }
+    $this->assertNotRegExp($regex, $actual, $message);
   }
 
   /**
@@ -565,23 +524,16 @@ abstract class BrowserTestBase extends RunnerTestBase {
    * @param NodeElement|string $field
    *   Checkbox element.
    * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   *   (optional) A message to display with the assertion.
    */
-  protected function assertCheckboxChecked($field, $message = '', $group = 'Other') {
+  protected function assertCheckboxChecked($field, $message = '') {
     if (is_string($field)) {
       $field = $this->fieldExists($field);
     }
-    return $this->assertTrue($field->isChecked(), $message, $group);
+    if ($message == '') {
+      $message = sprintf('Checkbox "%s" was expected to be checked.', $field->getXpath());
+    }
+    $this->assertTrue($field->isChecked(), $message);
   }
 
   /**
@@ -590,23 +542,16 @@ abstract class BrowserTestBase extends RunnerTestBase {
    * @param NodeElement|string $field
    *   Checkbox element.
    * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   *   (optional) A message to display with the assertion.
    */
-  protected function assertCheckboxNotChecked($field, $message = '', $group = 'Other') {
+  protected function assertCheckboxNotChecked($field, $message = '') {
     if (is_string($field)) {
       $field = $this->fieldExists($field);
     }
-    return $this->assertFalse($field->isChecked(), $message, $group);
+    if ($message == '') {
+      $message = sprintf('Checkbox "%s" was not expected to be checked.', $field->getXpath());
+    }
+    $this->assertFalse($field->isChecked(), $message);
   }
 
   /**
@@ -615,23 +560,16 @@ abstract class BrowserTestBase extends RunnerTestBase {
    * @param string $text
    *   Text to be contained in the page.
    * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   *   (optional) A message to display with the assertion.
    */
-  protected function assertPageTextContains($text, $message = '', $group = 'Other') {
+  protected function assertPageTextContains($text, $message = '') {
     $actual = $this->getSession()->getPage()->getText();
     $actual = preg_replace('/\s+/u', ' ', $actual);
     $regex = '/' . preg_quote($text, '/') . '/ui';
-    return $this->assertTrue(preg_match($regex, $actual), $message, $group);
+    if ($message == '') {
+      $message = sprintf('Page text was expected to contain "%s".', $text);
+    }
+    $this->assertRegExp($regex, $actual, $message);
   }
 
   /**
@@ -640,23 +578,16 @@ abstract class BrowserTestBase extends RunnerTestBase {
    * @param string $text
    *   Text to not be contained in the page.
    * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   *   (optional) A message to display with the assertion.
    */
-  protected function assertPageTextNotContains($text, $message = '', $group = 'Other') {
+  protected function assertPageTextNotContains($text, $message = '') {
     $actual = $this->getSession()->getPage()->getText();
     $actual = preg_replace('/\s+/u', ' ', $actual);
     $regex = '/' . preg_quote($text, '/') . '/ui';
-    return $this->assertFalse(preg_match($regex, $actual), $message, $group);
+    if ($message == '') {
+      $message = sprintf('Page text was not expected to contain "%s".', $text);
+    }
+    $this->assertNotRegExp($regex, $actual, $message);
   }
 
   /**
@@ -665,21 +596,14 @@ abstract class BrowserTestBase extends RunnerTestBase {
    * @param string $regex
    *   Perl regular expression to match.
    * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   *   (optional) A message to display with the assertion.
    */
-  protected function assertPageTextMatches($regex, $message = '', $group = 'Other') {
+  protected function assertPageTextMatches($regex, $message = '') {
     $actual = $this->getSession()->getPage()->getText();
-    return $this->assertTrue(preg_match($regex, $actual), $message, $group);
+    if ($message == '') {
+      $message = sprintf('Page text was expected to match "%s".', $regex);
+    }
+    $this->assertRegExp($regex, $actual, $message);
   }
 
   /**
@@ -688,21 +612,14 @@ abstract class BrowserTestBase extends RunnerTestBase {
    * @param string $regex
    *   Perl regular expression to not match.
    * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   *   (optional) A message to display with the assertion.
    */
-  protected function assertPageTextNotMatches($regex, $message = '', $group = 'Other') {
+  protected function assertPageTextNotMatches($regex, $message = '') {
     $actual = $this->getSession()->getPage()->getText();
-    return $this->assertFalse(preg_match($regex, $actual), $message, $group);
+    if ($message == '') {
+      $message = sprintf('Page text was expected to not match "%s".', $regex);
+    }
+    $this->assertNotRegExp($regex, $actual, $message);
   }
 
   /**
@@ -711,22 +628,15 @@ abstract class BrowserTestBase extends RunnerTestBase {
    * @param string $text
    *   Text to be contained in the response.
    * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   *   (optional) A message to display with the assertion.
    */
-  protected function assertResponseContains($text, $message = '', $group = 'Other') {
+  protected function assertResponseContains($text, $message = '') {
     $actual = $this->getSession()->getPage()->getContent();
     $regex = '/' . preg_quote($text, '/') . '/ui';
-    return $this->assertTrue(preg_match($regex, $actual), $message, $group);
+    if ($message == '') {
+      $message = sprintf('Response was expected to contain "%s".', $text);
+    }
+    $this->assertRegExp($regex, $actual, $message);
   }
 
   /**
@@ -735,22 +645,15 @@ abstract class BrowserTestBase extends RunnerTestBase {
    * @param string $text
    *   Text to not be contained in response.
    * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   *   (optional) A message to display with the assertion.
    */
-  protected function assertResponseNotContains($text, $message = '', $group = 'Other') {
+  protected function assertResponseNotContains($text, $message = '') {
     $actual = $this->getSession()->getPage()->getContent();
     $regex = '/' . preg_quote($text, '/') . '/ui';
-    return $this->assertFalse(preg_match($regex, $actual), $message, $group);
+    if ($message == '') {
+      $message = sprintf('Response was not expected to contain "%s".', $text);
+    }
+    $this->assertNotRegExp($regex, $actual, $message);
   }
 
   /**
@@ -759,21 +662,14 @@ abstract class BrowserTestBase extends RunnerTestBase {
    * @param string $regex
    *   Perl regular expression to match.
    * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   *   (optional) A message to display with the assertion.
    */
-  protected function assertResponseMatches($regex, $message = '', $group = 'Other') {
+  protected function assertResponseMatches($regex, $message = '') {
     $actual = $this->getSession()->getPage()->getContent();
-    return $this->assertTrue(preg_match($regex, $actual), $message, $group);
+    if ($message == '') {
+      $message = sprintf('Response was expected to match "%s".', $regex);
+    }
+    $this->assertRegExp($regex, $actual, $message);
   }
 
   /**
@@ -782,20 +678,13 @@ abstract class BrowserTestBase extends RunnerTestBase {
    * @param string $regex
    *   Perl regular expression to not match.
    * @param string $message
-   *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use format_string() to embed variables in the message text, not
-   *   t(). If left blank, a default message will be displayed.
-   * @param string $group
-   *   (optional) The group this message is in, which is displayed in a column
-   *   in test output. Use 'Debug' to indicate this is debugging output. Do not
-   *   translate this string. Defaults to 'Other'; most tests do not override
-   *   this default.
-   *
-   * @return bool
-   *   TRUE on pass, FALSE on fail.
+   *   (optional) A message to display with the assertion.
    */
-  protected function assertResponseNotMatches($regex, $message = '', $group = 'Other') {
+  protected function assertResponseNotMatches($regex, $message = '') {
     $actual = $this->getSession()->getPage()->getContent();
-    return $this->assertFalse(preg_match($regex, $actual), $message, $group);
+    if ($message == '') {
+      $message = sprintf('Response was not expected to match "%s".', $regex);
+    }
+    $this->assertNotRegExp($regex, $actual, $message);
   }
 }
