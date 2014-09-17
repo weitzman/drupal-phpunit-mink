@@ -141,7 +141,7 @@ abstract class BrowserTestBase extends RunnerTestBase {
     }
 
     $this->drupalGet('user');
-    $this->drupalSubmitForm(array(
+    $this->submitForm(array(
       'name' => $account->getUsername(),
       'pass' => $account->pass_raw,
     ), t('Log in'));
