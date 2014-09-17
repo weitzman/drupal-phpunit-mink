@@ -12,7 +12,6 @@ use Behat\Mink\Session;
 use Behat\Mink\Element\Element;
 use Behat\Mink\Element\NodeElement;
 use Behat\Mink\Driver\GoutteDriver;
-use Drupal\Component\Utility\String;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Session\AnonymousUserSession;
 
@@ -149,14 +148,13 @@ abstract class BrowserTestBase extends RunnerTestBase {
 
     // @see WebTestBase::drupalUserIsLoggedIn()
     $account->session_id = $this->getSession()->getCookie(session_name());
-    $pass = $this->assertTrue($this->drupalUserIsLoggedIn($account), format_string('User %name successfully logged in.', array('%name' => $account->getUsername())), 'User login');
-    if ($pass) {
-      $this->loggedInUser = $account;
-      $this->container->get('current_user')->setAccount($account);
-      // @todo Temporary workaround for not being able to use synchronized
-      //   services in non dumped container.
-      $this->container->get('access_subscriber')->setCurrentUser($account);
-    }
+    $this->assertTrue($this->drupalUserIsLoggedIn($account), sprintf('User %s successfully logged in.', $account->getUsername()));
+
+    $this->loggedInUser = $account;
+    $this->container->get('current_user')->setAccount($account);
+    // @todo Temporary workaround for not being able to use synchronized
+    //   services in non dumped container.
+    $this->container->get('access_subscriber')->setCurrentUser($account);
   }
 
   /**
@@ -170,15 +168,63 @@ abstract class BrowserTestBase extends RunnerTestBase {
     // screen.
     $this->drupalGet('user/logout', array('query' => array('destination' => 'user')));
     $this->assertResponseStatus(200, 'User was logged out.');
-    $pass = $this->assertFieldExists('name', 'Username field found.', 'Logout');
-    $pass = $pass && $this->assertFieldExists('pass', 'Password field found.', 'Logout');
+    $this->assertFieldExists('name', 'Username field found.');
+    $this->assertFieldExists('pass', 'Password field found.');
 
-    if ($pass) {
-      // @see WebTestBase::drupalUserIsLoggedIn()
-      unset($this->loggedInUser->session_id);
-      $this->loggedInUser = FALSE;
-      $this->container->get('current_user')->setAccount(new AnonymousUserSession());
+    // @see WebTestBase::drupalUserIsLoggedIn()
+    unset($this->loggedInUser->session_id);
+    $this->loggedInUser = FALSE;
+    $this->container->get('current_user')->setAccount(new AnonymousUserSession());
+  }
+
+  /**
+   * Fill and submit a form.
+   *
+   * @param  $edit
+   *   Field data in an associative array. Changes the current input fields
+   *   (where possible) to the values indicated.
+   *
+   *   A checkbox can be set to TRUE to be checked and should be set to FALSE to
+   *   be unchecked.
+   * @param $submit
+   *   Value of the submit button whose click is to be emulated. For example,
+   *   t('Save'). The processing of the request depends on this value. For
+   *   example, a form may have one button with the value t('Save') and another
+   *   button with the value t('Delete'), and execute different code depending
+   *   on which one is clicked.
+   * @param $form_html_id
+   *   (optional) HTML ID of the form to be submitted. On some pages
+   *   there are many identical forms, so just using the value of the submit
+   *   button is not enough. For example: 'trigger-node-presave-assign-form'.
+   *   Note that this is not the Drupal $form_id, but rather the HTML ID of the
+   *   form, which is typically the same thing but with hyphens replacing the
+   *   underscores.
+   */
+  protected function drupalSubmitForm($edit, $submit, $form_html_id = NULL) {
+    $session = $this->getSession();
+    $page = $session->getPage();
+
+    // Get the form.
+    if (isset($form_html_id)) {
+      $form = $this->elementExists('xpath', "//form[@id='" . $form_html_id . "']");
+      $submit_button = $form->findButton($submit);
     }
+    else {
+      $submit_button = $page->findButton($submit);
+      $form = $this->elementExists('xpath', './ancestor::form', $submit_button);
+    }
+
+    // Edit the form values.
+    foreach ($edit as $name => $value) {
+      $field = $this->fieldExists($name, $form);
+      $field->setValue($value);
+    }
+
+    // Submit form.
+    $submit_button->press();
+
+    // Ensure that any changes to variables in the other thread are picked up.
+    $this->refreshVariables();
   }
 
   /**
