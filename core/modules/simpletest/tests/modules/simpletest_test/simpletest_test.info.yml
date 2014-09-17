@@ -1,0 +1,6 @@
+name: Simpletest Test
+type: module
+description: 'Provides dummy module for testing SimpleTest.'
+package: Testing
+version: VERSION
+core: 8.x
