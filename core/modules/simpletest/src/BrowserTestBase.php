@@ -48,13 +48,11 @@ abstract class BrowserTestBase extends RunnerTestBase {
    */
   public function setUp() {
     parent::setUp();
-    if (!isset($this->mink)) {
-      $driver = new GoutteDriver();
-      $session = new Session($driver);
-      $this->mink = new Mink();
-      $this->mink->registerSession('goutte', $session);
-      $this->mink->setDefaultSessionName('goutte');
-    }
+    $driver = new GoutteDriver();
+    $session = new Session($driver);
+    $this->mink = new Mink();
+    $this->mink->registerSession('goutte', $session);
+    $this->mink->setDefaultSessionName('goutte');
   }
 
   /**
@@ -62,9 +60,7 @@ abstract class BrowserTestBase extends RunnerTestBase {
    */
   public function tearDown() {
     parent::tearDown();
-    if (isset($this->mink)) {
-      $this->mink->resetSessions();
-    }
+    $this->mink->stopSessions();
   }
 
   /**
