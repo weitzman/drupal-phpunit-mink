@@ -1200,7 +1200,9 @@ function drupal_valid_test_ua($new_prefix = NULL) {
 
   // Perform a basic check on the User-Agent HTTP request header first. Any
   // inbound request that uses the simpletest UA header needs to be validated.
-  if (isset($_SERVER['HTTP_USER_AGENT']) && preg_match("/^(simpletest\d+);(.+);(.+);(.+)$/", $_SERVER['HTTP_USER_AGENT'], $matches)) {
+  $http_user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : NULL;
+  $user_agent = isset($_COOKIE['SIMPLETEST_USER_AGENT']) ? $_COOKIE['SIMPLETEST_USER_AGENT'] : $http_user_agent;
+  if (isset($user_agent) && preg_match("/^(simpletest\d+);(.+);(.+);(.+)$/", $user_agent, $matches)) {
     list(, $prefix, $time, $salt, $hmac) = $matches;
     $check_string =  $prefix . ';' . $time . ';' . $salt;
     // Read the hash salt prepared by drupal_generate_test_ua().

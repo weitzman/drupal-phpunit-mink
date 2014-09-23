@@ -98,7 +98,7 @@ abstract class BrowserTestBase extends RunnerTestBase {
     $session = $this->getSession();
 
     // Set request headers.
-    $session->setRequestHeader('user-agent', drupal_generate_test_ua($this->databasePrefix));
+    $session->setCookie('SIMPLETEST_USER_AGENT', drupal_generate_test_ua($this->databasePrefix));
     $session->visit($url);
     $out = $session->getPage()->getContent();
 
