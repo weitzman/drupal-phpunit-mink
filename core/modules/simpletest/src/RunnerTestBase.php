@@ -445,13 +445,6 @@ abstract class RunnerTestBase extends \PHPUnit_Framework_TestCase implements \PH
     if (empty($this->databasePrefix)) {
       $this->prepareDatabasePrefix();
     }
-    // If the backup already exists, something went terribly wrong.
-    // This case is possible, because database connection info is a static
-    // global state construct on the Database class, which at least persists
-    // for all test methods executed in one PHP process.
-    if (Database::getConnectionInfo('simpletest_original_default')) {
-      throw new \RuntimeException("Bad Database connection state: 'simpletest_original_default' connection key already exists. Broken test?");
-    }
 
     // Clone the current connection and replace the current prefix.
     $connection_info = Database::getConnectionInfo('default');

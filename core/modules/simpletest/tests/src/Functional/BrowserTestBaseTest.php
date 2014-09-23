@@ -28,7 +28,9 @@ class BrowserTestBaseTest extends BrowserTestBase {
    * Tests basic page test.
    */
   function testGoTo() {
+    // Go to the front page and make sure we can see some text.
     $this->drupalGet('');
+    $this->assertPageTextContains("Enter your Drupal username.");
   }
 
   /**
