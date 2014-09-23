@@ -35,74 +35,91 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * @package    PHPUnit
- * @subpackage Framework
- * @author     Ralph Schindler <ralph.schindler@zend.com>
  * @author     Sebastian Bergmann <sebastian@phpunit.de>
+ * @author     Jeroen Versteeg <jversteeg@gmail.com>
  * @copyright  2001-2014 Sebastian Bergmann <sebastian@phpunit.de>
  * @license    http://www.opensource.org/licenses/BSD-3-Clause  The BSD 3-Clause License
  * @link       http://www.phpunit.de/
- * @since      File available since Release 3.5.7
+ * @since      File available since Release 3.7.30
  */
 
 /**
- * Class to hold the information about a deprecated feature that was used
+ *
  *
  * @package    PHPUnit
- * @subpackage Framework
- * @author     Ralph Schindler <ralph.schindler@zend.com>
- * @author     Sebastian Bergmann <sebastian@phpunit.de>
+ * @author     Márcio Almada <marcio3w@gmail.com>
  * @copyright  2001-2014 Sebastian Bergmann <sebastian@phpunit.de>
  * @license    http://www.opensource.org/licenses/BSD-3-Clause  The BSD 3-Clause License
  * @link       http://www.phpunit.de/
- * @since      Interface available since Release 3.5.7
+ * @since      Class available since Release 4.0.20
+ * @covers     PHPUnit_Framework_Constraint_ExceptionMessage
  */
-class PHPUnit_Util_DeprecatedFeature
+class ExceptionMessageTest extends PHPUnit_Framework_TestCase
 {
-    /**
-     * @var array
-     */
-    protected $traceInfo = array();
 
     /**
-     * @var string
+     * @expectedException \Exception
+     * @expectedExceptionMessage A literal exception message
      */
-    protected $message = null;
-
-    /**
-     * @param string $message
-     * @param array  $traceInfo
-     */
-    public function __construct($message, array $traceInfo = array())
+    public function testLiteralMessage()
     {
-        $this->message   = $message;
-        $this->traceInfo = $traceInfo;
+        throw new Exception("A literal exception message");
     }
 
     /**
-     * @return string
-     * @since  Method available since Release 4.0.0
+     * @expectedException \Exception
+     * @expectedExceptionMessage A partial
      */
-    public function getMessage()
+    public function testPatialMessageBegin()
     {
-        return $this->message;
+        throw new Exception("A partial exception message");
     }
 
     /**
-     * @return string
-     * @since  Method available since Release 4.0.0
+     * @expectedException \Exception
+     * @expectedExceptionMessage partial exception
      */
-    public function getSource()
+    public function testPatialMessageMiddle()
     {
-        $source = '';
+        throw new Exception("A partial exception message");
+    }
 
-        if (isset($this->traceInfo['file'])) {
-            $source .= $this->traceInfo['file'];
+    /**
+     * @expectedException \Exception
+     * @expectedExceptionMessage exception message
+     */
+    public function testPatialMessageEnd()
+    {
+        throw new Exception("A partial exception message");
+    }
 
-            if (isset($this->traceInfo['line'])) {
-                $source .= ':' . $this->traceInfo['line'];
-            }
-        }
+    /**
+     * @runInSeparateProcess
+     * @requires extension xdebug
+     * @expectedException \Exception
+     * @expectedExceptionMessage Screaming preg_match
+     */
+    public function testMessageWithXdebugScreamOn()
+    {
+        ini_set('xdebug.scream', '1');
+        throw new Exception("Screaming preg_match");
+    }
 
-        return $source;
+    /**
+     * @expectedException \Exception
+     * @expectedExceptionMessage /^A polymorphic \w+ message/
+     */
+    public function testRegexMessage()
+    {
+        throw new Exception("A polymorphic exception message");
+    }
+
+    /**
+     * @expectedException \Exception
+     * @expectedExceptionMessage /^a poly[a-z]+ [a-zA-Z0-9_]+ me(s){2}age$/i
+     */
+    public function testRegexMessageExtreme()
+    {
+        throw new Exception("A polymorphic exception message");
     }
 }
