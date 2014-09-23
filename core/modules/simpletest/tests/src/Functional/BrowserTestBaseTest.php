@@ -31,6 +31,13 @@ class BrowserTestBaseTest extends BrowserTestBase {
     // Go to the front page and make sure we can see some text.
     $this->drupalGet('');
     $this->assertPageTextContains("Enter your Drupal username.");
+
+    // Click a link.
+
+
+    // Test response code.
+
+
   }
 
   /**
@@ -38,13 +45,13 @@ class BrowserTestBaseTest extends BrowserTestBase {
    */
   function testForm() {
     $this->drupalGet('');
-  }
 
-  /**
-   * Tests basic page test.
-   */
-  function testAjax() {
-    $this->drupalGet('');
+    // Fill out form.
+
+
+    // File uplaod.
+
+    
   }
 
 }
