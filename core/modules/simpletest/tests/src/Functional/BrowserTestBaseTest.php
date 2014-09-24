@@ -25,6 +25,11 @@ class BrowserTestBaseTest extends BrowserTestBase {
   public static $modules = array('simpletest_test');
 
   /**
+   * The administrator user.
+   */
+  protected $adminUser = FALSE;
+
+  /**
    * Tests basic page test.
    */
   function testGoTo() {
@@ -32,8 +37,12 @@ class BrowserTestBaseTest extends BrowserTestBase {
     $this->drupalGet('');
     $this->assertPageTextContains("Enter your Drupal username.");
 
-    // Click a link.
+    // Test login.
+    $this->adminUser = $this->drupalCreateUser();
+    $this->drupalLogin($this->adminUser);
+    $this->drupalUserIsLoggedIn($this->adminUser);
 
+    // Click a link.
 
     // Test response code.
 
