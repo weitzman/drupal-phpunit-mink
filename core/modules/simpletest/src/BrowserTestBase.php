@@ -74,6 +74,19 @@ abstract class BrowserTestBase extends RunnerTestBase {
   }
 
   /**
+   * Prepare for a request to testing site.
+   *
+   * The testing site is protected via a SIMPLETEST_USER_AGENT cookie that
+   * is checked by drupal_valid_test_ua().
+   *
+   * @see drupal_valid_test_ua()
+   */
+  protected function prepareRequest() {
+    $session = $this->getSession();
+    $session->setCookie('SIMPLETEST_USER_AGENT', drupal_generate_test_ua($this->databasePrefix));
+  }
+
+  /**
    * Retrieves a Drupal path or an absolute path.
    *
    * @param string $path
@@ -97,8 +110,7 @@ abstract class BrowserTestBase extends RunnerTestBase {
     }
     $session = $this->getSession();
 
-    // Set request headers.
-    $session->setCookie('SIMPLETEST_USER_AGENT', drupal_generate_test_ua($this->databasePrefix));
+    $this->prepareRequest();
     $session->visit($url);
     $out = $session->getPage()->getContent();
 
@@ -221,6 +233,7 @@ abstract class BrowserTestBase extends RunnerTestBase {
     }
 
     // Submit form.
+    $this->prepareRequest();
     $submit_button->press();
 
     // Ensure that any changes to variables in the other thread are picked up.
