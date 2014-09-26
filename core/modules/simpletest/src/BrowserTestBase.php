@@ -53,6 +53,32 @@ abstract class BrowserTestBase extends RunnerTestBase {
     $this->mink = new Mink();
     $this->mink->registerSession('goutte', $session);
     $this->mink->setDefaultSessionName('goutte');
+
+    // In order to debug web tests you need to either set a cookie, have the
+    // Xdebug session in the URL or set an environment variable in case of CLI
+    // requests. If the developer listens to connection when running tests, by
+    // default the cookie is not forwarded to the client side, so you cannot
+    // debug the code running on the test site. In order to make debuggers work
+    // this bit of information is forwarded. Make sure that the debugger listens
+    // to at least three external connections.
+    $request = \Drupal::request();
+    $cookie_params = $request->cookies;
+    if ($cookie_params->has('XDEBUG_SESSION')) {
+      $session->setCookie('XDEBUG_SESSION', $cookie_params->get('XDEBUG_SESSION'));
+    }
+    // For CLI requests, the information is stored in $_SERVER.
+    $server = $request->server;
+    if ($server->has('XDEBUG_CONFIG')) {
+      // $_SERVER['XDEBUG_CONFIG'] has the form "key1=value1 key2=value2 ...".
+      $pairs = explode(' ', $server->get('XDEBUG_CONFIG'));
+      foreach ($pairs as $pair) {
+        list($key, $value) = explode('=', $pair);
+        // Account for key-value pairs being separated by multiple spaces.
+        if (trim($key, ' ') == 'idekey') {
+          $session->setCookie('XDEBUG_SESSION', trim($value, ' '));
+        }
+      }
+    }
   }
 
   /**
@@ -72,6 +98,19 @@ abstract class BrowserTestBase extends RunnerTestBase {
    */
   public function getSession($name = null) {
     return $this->mink->getSession($name);
+  }
+
+  /**
+   * Prepare for a request to testing site.
+   *
+   * The testing site is protected via a SIMPLETEST_USER_AGENT cookie that
+   * is checked by drupal_valid_test_ua().
+   *
+   * @see drupal_valid_test_ua()
+   */
+  protected function prepareRequest() {
+    $session = $this->getSession();
+    $session->setCookie('SIMPLETEST_USER_AGENT', drupal_generate_test_ua($this->databasePrefix));
   }
 
   /**
@@ -98,8 +137,7 @@ abstract class BrowserTestBase extends RunnerTestBase {
     }
     $session = $this->getSession();
 
-    // Set request headers.
-    $session->setCookie('SIMPLETEST_USER_AGENT', drupal_generate_test_ua($this->databasePrefix));
+    $this->prepareRequest();
     $session->visit($url);
     $out = $session->getPage()->getContent();
 
@@ -356,6 +394,7 @@ abstract class BrowserTestBase extends RunnerTestBase {
     }
 
     // Submit form.
+    $this->prepareRequest();
     $submit_button->press();
 
     // Ensure that any changes to variables in the other thread are picked up.
