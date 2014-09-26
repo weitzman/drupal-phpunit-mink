@@ -14,6 +14,7 @@ use Behat\Mink\Element\NodeElement;
 use Behat\Mink\Driver\GoutteDriver;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Session\AnonymousUserSession;
+use Drupal\Component\Utility\String;
 
 /**
  * Test case for typical Drupal tests.
@@ -144,6 +145,140 @@ abstract class BrowserTestBase extends RunnerTestBase {
     $this->refreshVariables();
 
     return $out;
+  }
+
+  /**
+   * Create a user with a given set of permissions.
+   *
+   * @param array $permissions
+   *   Array of permission names to assign to user. Note that the user always
+   *   has the default permissions derived from the "authenticated users" role.
+   * @param string $name
+   *   The user name.
+   *
+   * @return \Drupal\user\Entity\User|false
+   *   A fully loaded user object with pass_raw property, or FALSE if account
+   *   creation fails.
+   */
+  protected function drupalCreateUser(array $permissions = array(), $name = NULL) {
+    // Create a role with the given permission set, if any.
+    $rid = FALSE;
+    if ($permissions) {
+      $rid = $this->drupalCreateRole($permissions);
+      if (!$rid) {
+        return FALSE;
+      }
+    }
+
+    // Create a user assigned to that role.
+    $edit = array();
+    $edit['name'] = !empty($name) ? $name : $this->randomName();
+    $edit['mail'] = $edit['name'] . '@example.com';
+    $edit['pass'] = user_password();
+    $edit['status'] = 1;
+    if ($rid) {
+      $edit['roles'] = array($rid);
+    }
+
+    $account = entity_create('user', $edit);
+    $account->save();
+
+    if (!$account->id()) {
+      return FALSE;
+    }
+
+    // Add the raw password so that we can log in as this user.
+    $account->pass_raw = $edit['pass'];
+    return $account;
+  }
+
+  /**
+   * Creates a role with specified permissions.
+   *
+   * @param array $permissions
+   *   Array of permission names to assign to role.
+   * @param string $rid
+   *   (optional) The role ID (machine name). Defaults to a random name.
+   * @param string $name
+   *   (optional) The label for the role. Defaults to a random string.
+   * @param integer $weight
+   *   (optional) The weight for the role. Defaults NULL so that entity_create()
+   *   sets the weight to maximum + 1.
+   *
+   * @return string
+   *   Role ID of newly created role, or FALSE if role creation failed.
+   */
+  protected function drupalCreateRole(array $permissions, $rid = NULL, $name = NULL, $weight = NULL) {
+    // Generate a random, lowercase machine name if none was passed.
+    if (!isset($rid)) {
+      $rid = strtolower($this->randomMachineName(8));
+    }
+    // Generate a random label.
+    if (!isset($name)) {
+      // In the role UI role names are trimmed and random string can start or
+      // end with a space.
+      $name = trim($this->randomString(8));
+    }
+
+    // Check the all the permissions strings are valid.
+    if (!$this->checkPermissions($permissions)) {
+      return FALSE;
+    }
+
+    // Create new role.
+    $role = entity_create('user_role', array(
+      'id' => $rid,
+      'label' => $name,
+    ));
+    if (!is_null($weight)) {
+      $role->set('weight', $weight);
+    }
+    $result = $role->save();
+
+    $this->assertIdentical($result, SAVED_NEW, String::format('Created role ID @rid with name @name.', array(
+      '@name' => var_export($role->label(), TRUE),
+      '@rid' => var_export($role->id(), TRUE),
+    )), 'Role');
+
+    if ($result === SAVED_NEW) {
+      // Grant the specified permissions to the role, if any.
+      if (!empty($permissions)) {
+        user_role_grant_permissions($role->id(), $permissions);
+        $assigned_permissions = entity_load('user_role', $role->id())->getPermissions();
+        $missing_permissions = array_diff($permissions, $assigned_permissions);
+        if (!$missing_permissions) {
+          $this->pass(String::format('Created permissions: @perms', array('@perms' => implode(', ', $permissions))), 'Role');
+        }
+        else {
+          $this->fail(String::format('Failed to create permissions: @perms', array('@perms' => implode(', ', $missing_permissions))), 'Role');
+        }
+      }
+      return $role->id();
+    }
+    else {
+      return FALSE;
+    }
+  }
+
+  /**
+   * Checks whether a given list of permission names is valid.
+   *
+   * @param array $permissions
+   *   The permission names to check.
+   *
+   * @return bool
+   *   TRUE if the permissions are valid, FALSE otherwise.
+   */
+  protected function checkPermissions(array $permissions) {
+    $available = array_keys(\Drupal::moduleHandler()->invokeAll('permission'));
+    $valid = TRUE;
+    foreach ($permissions as $permission) {
+      if (!in_array($permission, $available)) {
+        $this->fail(String::format('Invalid permission %permission.', array('%permission' => $permission)), 'Role');
+        $valid = FALSE;
+      }
+    }
+    return $valid;
   }
 
   /**
