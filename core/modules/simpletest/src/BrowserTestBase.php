@@ -15,6 +15,9 @@ use Behat\Mink\Driver\GoutteDriver;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\Component\Utility\String;
+use Drupal\simpletest\RemoteCoverage\RemoteCoverageHelper;
+use Drupal\simpletest\RemoteCoverage\RemoteCoverageTool;
+use Drupal\simpletest\RemoteCoverage\RemoteUrl;
 
 /**
  * Test case for typical Drupal tests.
@@ -36,6 +39,27 @@ abstract class BrowserTestBase extends RunnerTestBase {
   protected $dumpHeaders = FALSE;
 
   /**
+   * Remote coverage helper.
+   *
+   * @var RemoteCoverageHelper
+   */
+  protected $remoteCoverageHelper;
+
+  /**
+   * Test ID.
+   *
+   * @var string
+   */
+  private $testId;
+
+  /**
+   * Remote coverage collection url.
+   *
+   * @var string Override to provide code coverage data from the server
+   */
+  private $remoteCoverageScriptUrl;
+
+  /**
    * Constructor for \Drupal\simpletest\BrowserTestBase.
    */
   public function __construct($test_id = NULL) {
@@ -47,7 +71,10 @@ abstract class BrowserTestBase extends RunnerTestBase {
    * {@inheritdoc}
    */
   public function setUp() {
+    global $base_url;
     parent::setUp();
+    $this->remoteCoverageScriptUrl = $base_url;
+    $this->remoteCoverageHelper = new RemoteCoverageHelper(new RemoteUrl());
     $driver = new GoutteDriver();
     $session = new Session($driver);
     $this->mink = new Mink();
@@ -902,5 +929,71 @@ abstract class BrowserTestBase extends RunnerTestBase {
       $message = sprintf('Response was not expected to match "%s".', $regex);
     }
     $this->assertNotRegExp($regex, $actual, $message);
+  }
+
+  /**
+   * {inheritdoc}
+   */
+  public function run(\PHPUnit_Framework_TestResult $result = NULL) {
+    if ($result === NULL) {
+      $result = $this->createResult();
+    }
+
+    parent::run($result);
+
+    if ($result->getCollectCodeCoverageInformation()) {
+      $result->getCodeCoverage()
+        ->append($this->getRemoteCodeCoverageInformation(), $this);
+    }
+
+    return $result;
+  }
+
+  /**
+   * Returns remote code coverage information.
+   *
+   * @return array
+   * @throws \RuntimeException When no remote coverage script URL set.
+   */
+  public function getRemoteCodeCoverageInformation() {
+    if ($this->remoteCoverageScriptUrl == '') {
+      throw new \RuntimeException('Remote coverage script url not set');
+    }
+
+    return $this->remoteCoverageHelper->get($this->remoteCoverageScriptUrl, $this->testId);
+  }
+
+  /**
+   * Override to tell remote website, that code coverage information needs to be collected.
+   *
+   * @return mixed
+   * @throws \Exception When exception was thrown inside the test.
+   */
+  protected function runTest() {
+    if ($this->getCollectCodeCoverageInformation()) {
+      $this->testId = get_class($this) . '__' . $this->getName();
+
+      $session = $this->getSession();
+      $session->setCookie(RemoteCoverageTool::TEST_ID_VARIABLE, NULL);
+      $session->setCookie(RemoteCoverageTool::TEST_ID_VARIABLE, $this->testId);
+    }
+
+    return parent::runTest();
+  }
+
+  /**
+   * Whatever or not code coverage information should be gathered.
+   *
+   * @return boolean
+   * @throws \RuntimeException When used before test is started.
+   */
+  public function getCollectCodeCoverageInformation() {
+    $result = $this->getTestResultObject();
+
+    if (!is_object($result)) {
+      throw new \RuntimeException('Test must be started before attempting to collect coverage information');
+    }
+
+    return $result->getCollectCodeCoverageInformation();
   }
 }

@@ -10,9 +10,23 @@
 
 use Drupal\Core\DrupalKernel;
 use Drupal\Core\Site\Settings;
+use Drupal\simpletest\RemoteCoverage\RemoteCoverageTool;
 use Symfony\Component\HttpFoundation\Request;
 
 $autoloader = require_once __DIR__ . '/core/vendor/autoload.php';
+
+// We enable code coverage here if client is requesting test site or asking
+// for code coverage data. It is done before Drupal is bootstrapped in order
+// to have code coverage of the bootstrap and Drupal kernel.
+$http_user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : NULL;
+$user_agent = isset($_COOKIE['SIMPLETEST_USER_AGENT']) ? $_COOKIE['SIMPLETEST_USER_AGENT'] : $http_user_agent;
+if (strpos($user_agent, 'simpletest') !== FALSE || isset($_GET[RemoteCoverageTool::TEST_ID_VARIABLE])) {
+  $coverage_dir = sys_get_temp_dir() . '/simpletest';
+  if (!file_exists($coverage_dir)) {
+    mkdir($coverage_dir);
+  }
+  RemoteCoverageTool::init($coverage_dir);
+}
 
 try {
 
