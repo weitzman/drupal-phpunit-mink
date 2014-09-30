@@ -25,6 +25,13 @@ use Symfony\Component\HttpFoundation\Request;
  */
 abstract class RunnerTestBase extends \PHPUnit_Framework_TestCase implements \PHPUnit_Framework_TestListener {
   /**
+   * Class loader.
+   *
+   * @var object
+   */
+  protected $classLoader;
+
+  /**
    * The site directory of this test run.
    *
    * @var string
@@ -225,14 +232,14 @@ abstract class RunnerTestBase extends \PHPUnit_Framework_TestCase implements \PH
     // Since Drupal is bootstrapped already, install_begin_request() will not
     // bootstrap into DRUPAL_BOOTSTRAP_CONFIGURATION (again). Hence, we have to
     // reload the newly written custom settings.php manually.
-    Settings::initialize($directory);
+    Settings::initialize($directory, $this->classLoader);
 
     // Execute the non-interactive installer.
     require_once DRUPAL_ROOT . '/core/includes/install.core.inc';
     install_drupal($parameters);
 
     // Import new settings.php written by the installer.
-    Settings::initialize($directory);
+    Settings::initialize($directory, $this->classLoader);
     foreach ($GLOBALS['config_directories'] as $type => $path) {
       $this->configDirectories[$type] = $path;
     }
@@ -246,7 +253,7 @@ abstract class RunnerTestBase extends \PHPUnit_Framework_TestCase implements \PH
     chmod($directory, 0777);
 
     $request = \Drupal::request();
-    $this->kernel = DrupalKernel::createFromRequest($request, drupal_classloader(), 'prod', TRUE);
+    $this->kernel = DrupalKernel::createFromRequest($request, $this->classLoader, 'prod', TRUE);
     $this->kernel->prepareLegacyRequest($request);
     // Force the container to be built from scratch instead of loaded from the
     // disk. This forces us to not accidently load the parent site.
@@ -477,9 +484,9 @@ abstract class RunnerTestBase extends \PHPUnit_Framework_TestCase implements \PH
    */
   protected function prepareEnvironment() {
     // Bootstrap Drupal so we can use Drupal's built in functions.
-    $autoloader = require __DIR__ . '/../../../vendor/autoload.php';
+    $this->classLoader = require __DIR__ . '/../../../vendor/autoload.php';
     $request = Request::createFromGlobals();
-    $kernel = TestRunnerKernel::createFromRequest($request, $autoloader);
+    $kernel = TestRunnerKernel::createFromRequest($request, $this->classLoader);
     $kernel->prepareLegacyRequest($request);
 
     $this->prepareDatabasePrefix();
@@ -652,7 +659,6 @@ abstract class RunnerTestBase extends \PHPUnit_Framework_TestCase implements \PH
    *   The mocked request object.
    */
   protected function prepareRequestForGenerator($clean_urls = TRUE, $override_server_vars = array()) {
-    $generator = $this->container->get('url_generator');
     $request = Request::createFromGlobals();
     $server = $request->server->all();
     if (basename($server['SCRIPT_FILENAME']) != basename($server['SCRIPT_NAME'])) {
@@ -676,7 +682,13 @@ abstract class RunnerTestBase extends \PHPUnit_Framework_TestCase implements \PH
 
     $request = Request::create($request_path, 'GET', array(), array(), array(), $server);
     $this->container->get('request_stack')->push($request);
-    $generator->updateFromRequest();
+
+    // The request context is normally set by the router_listener from within
+    // its KernelEvents::REQUEST listener. In the simpletest parent site this
+    // event is not fired, therefore it is necessary to updated the request
+    // context manually here.
+    $this->container->get('router.request_context')->fromRequest($request);
+
     return $request;
   }
 
