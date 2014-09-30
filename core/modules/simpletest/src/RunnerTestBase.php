@@ -205,6 +205,7 @@ abstract class RunnerTestBase extends \PHPUnit_Framework_TestCase implements \PH
     // Not using File API; a potential error must trigger a PHP warning.
     $directory = DRUPAL_ROOT . '/' . $this->siteDirectory;
     copy(DRUPAL_ROOT . '/sites/default/default.settings.php', $directory . '/settings.php');
+    copy(DRUPAL_ROOT . '/sites/default/default.services.yml', $directory . '/services.yml');
 
     // All file system paths are created by System module during installation.
     // @see system_requirements()
