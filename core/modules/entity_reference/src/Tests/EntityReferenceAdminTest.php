@@ -18,7 +18,7 @@ use Drupal\taxonomy\Entity\Vocabulary;
 class EntityReferenceAdminTest extends WebTestBase {
 
   /**
-   * Modules to enable.
+   * Modules to install.
    *
    * Enable path module to ensure that the selection handler does not fail for
    * entities with a path field.
@@ -27,7 +27,7 @@ class EntityReferenceAdminTest extends WebTestBase {
    */
   public static $modules = array('node', 'field_ui', 'entity_reference', 'path', 'taxonomy');
 
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
 
     // Create test user.
@@ -54,48 +54,48 @@ class EntityReferenceAdminTest extends WebTestBase {
     ), t('Save'));
 
     // Node should be selected by default.
-    $this->assertFieldByName('field[settings][target_type]', 'node');
+    $this->assertFieldByName('field_storage[settings][target_type]', 'node');
 
     // Check that all entity types can be referenced.
-    $this->assertFieldSelectOptions('field[settings][target_type]', array_keys(\Drupal::entityManager()->getDefinitions()));
+    $this->assertFieldSelectOptions('field_storage[settings][target_type]', array_keys(\Drupal::entityManager()->getDefinitions()));
 
-    // Second step: 'Instance settings' form.
+    // Second step: 'Field settings' form.
     $this->drupalPostForm(NULL, array(), t('Save field settings'));
 
     // The base handler should be selected by default.
-    $this->assertFieldByName('instance[settings][handler]', 'default');
+    $this->assertFieldByName('field[settings][handler]', 'default');
 
     // The base handler settings should be displayed.
     $entity_type_id = 'node';
     $bundles = entity_get_bundles($entity_type_id);
     foreach ($bundles as $bundle_name => $bundle_info) {
-      $this->assertFieldByName('instance[settings][handler_settings][target_bundles][' . $bundle_name . ']');
+      $this->assertFieldByName('field[settings][handler_settings][target_bundles][' . $bundle_name . ']');
     }
 
     reset($bundles);
 
     // Test the sort settings.
     // Option 0: no sort.
-    $this->assertFieldByName('instance[settings][handler_settings][sort][field]', '_none');
-    $this->assertNoFieldByName('instance[settings][handler_settings][sort][direction]');
+    $this->assertFieldByName('field[settings][handler_settings][sort][field]', '_none');
+    $this->assertNoFieldByName('field[settings][handler_settings][sort][direction]');
     // Option 1: sort by field.
-    $this->drupalPostAjaxForm(NULL, array('instance[settings][handler_settings][sort][field]' => 'nid'), 'instance[settings][handler_settings][sort][field]');
-    $this->assertFieldByName('instance[settings][handler_settings][sort][direction]', 'ASC');
+    $this->drupalPostAjaxForm(NULL, array('field[settings][handler_settings][sort][field]' => 'nid'), 'field[settings][handler_settings][sort][field]');
+    $this->assertFieldByName('field[settings][handler_settings][sort][direction]', 'ASC');
 
     // Test that a non-translatable base field is a sort option.
-    $this->assertFieldByXPath("//select[@name='instance[settings][handler_settings][sort][field]']/option[@value='nid']");
+    $this->assertFieldByXPath("//select[@name='field[settings][handler_settings][sort][field]']/option[@value='nid']");
     // Test that a translatable base field is a sort option.
-    $this->assertFieldByXPath("//select[@name='instance[settings][handler_settings][sort][field]']/option[@value='title']");
+    $this->assertFieldByXPath("//select[@name='field[settings][handler_settings][sort][field]']/option[@value='title']");
     // Test that a configurable field is a sort option.
-    $this->assertFieldByXPath("//select[@name='instance[settings][handler_settings][sort][field]']/option[@value='body.value']");
+    $this->assertFieldByXPath("//select[@name='field[settings][handler_settings][sort][field]']/option[@value='body.value']");
 
     // Set back to no sort.
-    $this->drupalPostAjaxForm(NULL, array('instance[settings][handler_settings][sort][field]' => '_none'), 'instance[settings][handler_settings][sort][field]');
-    $this->assertNoFieldByName('instance[settings][handler_settings][sort][direction]');
+    $this->drupalPostAjaxForm(NULL, array('field[settings][handler_settings][sort][field]' => '_none'), 'field[settings][handler_settings][sort][field]');
+    $this->assertNoFieldByName('field[settings][handler_settings][sort][direction]');
 
     // Third step: confirm.
     $this->drupalPostForm(NULL, array(
-      'instance[settings][handler_settings][target_bundles][' . key($bundles) . ']' => key($bundles),
+      'field[settings][handler_settings][target_bundles][' . key($bundles) . ']' => key($bundles),
     ), t('Save settings'));
 
     // Check that the field appears in the overview form.
@@ -113,6 +113,9 @@ class EntityReferenceAdminTest extends WebTestBase {
     // Create entity reference field with taxonomy term as a target.
     $taxonomy_term_field_name = $this->createEntityReferenceField('taxonomy_term', 'tags');
 
+    // Create entity reference field with user as a target.
+    $user_field_name = $this->createEntityReferenceField('user');
+
     // Create entity reference field with node as a target.
     $node_field_name = $this->createEntityReferenceField('node', $this->type);
 
@@ -129,6 +132,17 @@ class EntityReferenceAdminTest extends WebTestBase {
       'entity_reference_entity_id',
       'entity_reference_rss_category',
       'entity_reference_entity_view',
+      'hidden',
+    ));
+
+    // Test if User Reference Field has the correct formatters.
+    // Author should be available for this field.
+    // RSS Category should not be available for this field.
+    $this->assertFieldSelectOptions('fields[field_' . $user_field_name . '][type]', array(
+      'author',
+      'entity_reference_entity_id',
+      'entity_reference_entity_view',
+      'entity_reference_label',
       'hidden',
     ));
 
@@ -177,12 +191,12 @@ class EntityReferenceAdminTest extends WebTestBase {
     ), t('Save'));
 
     // Select the correct target type given in the parameters and save field settings.
-    $this->drupalPostForm(NULL, array('field[settings][target_type]' => $target_type), t('Save field settings'));
+    $this->drupalPostForm(NULL, array('field_storage[settings][target_type]' => $target_type), t('Save field settings'));
 
     // Select required fields if there are any.
     $edit = array();
     if($bundle) {
-      $edit['instance[settings][handler_settings][target_bundles][' . $bundle . ']'] = TRUE;
+      $edit['field[settings][handler_settings][target_bundles][' . $bundle . ']'] = TRUE;
     }
 
     // Save settings.

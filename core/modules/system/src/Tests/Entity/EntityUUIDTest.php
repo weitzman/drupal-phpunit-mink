@@ -14,7 +14,7 @@ namespace Drupal\system\Tests\Entity;
  */
 class EntityUUIDTest extends EntityUnitTestBase {
 
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
 
     $this->installEntitySchema('entity_test_rev');
@@ -73,7 +73,7 @@ class EntityUUIDTest extends EntityUnitTestBase {
 
     // Creating a duplicate needs to result in a new UUID.
     $entity_duplicate = $entity->createDuplicate();
-    foreach ($entity->getProperties() as $property => $value) {
+    foreach ($entity->getFields() as $property => $value) {
       switch($property) {
         case 'uuid':
           $this->assertNotNull($entity_duplicate->uuid());

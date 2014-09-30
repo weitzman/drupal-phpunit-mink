@@ -5,7 +5,7 @@
  * Contains \Drupal\Tests\Core\Form\FormValidatorTest.
  */
 
-namespace Drupal\Tests\Core\Form {
+namespace Drupal\Tests\Core\Form;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Form\FormState;
@@ -33,9 +33,9 @@ class FormValidatorTest extends UnitTestCase {
 
     $form = array();
     $form_state = new FormState();
-    $this->assertFalse($form_state['validation_complete']);
+    $this->assertFalse($form_state->isValidationComplete());
     $form_validator->validateForm('test_form_id', $form, $form_state);
-    $this->assertTrue($form_state['validation_complete']);
+    $this->assertTrue($form_state->isValidationComplete());
   }
 
   /**
@@ -52,8 +52,8 @@ class FormValidatorTest extends UnitTestCase {
       ->method('doValidateForm');
 
     $form = array();
-    $form_state = new FormState();
-    $form_state['validation_complete'] = TRUE;
+    $form_state = (new FormState())
+      ->setValidationComplete();
     $form_validator->validateForm('test_form_id', $form, $form_state);
     $this->assertArrayNotHasKey('#errors', $form);
   }
@@ -72,9 +72,9 @@ class FormValidatorTest extends UnitTestCase {
       ->method('doValidateForm');
 
     $form = array();
-    $form_state = new FormState();
-    $form_state['validation_complete'] = TRUE;
-    $form_state['must_validate'] = TRUE;
+    $form_state = (new FormState())
+      ->setValidationComplete()
+      ->setValidationEnforced();
     $form_validator->validateForm('test_form_id', $form, $form_state);
     $this->assertArrayHasKey('#errors', $form);
   }
@@ -92,9 +92,10 @@ class FormValidatorTest extends UnitTestCase {
     $csrf_token->expects($this->once())
       ->method('validate')
       ->will($this->returnValue(FALSE));
+    $logger = $this->getMock('Psr\Log\LoggerInterface');
 
     $form_validator = $this->getMockBuilder('Drupal\Core\Form\FormValidator')
-      ->setConstructorArgs(array($request_stack, $this->getStringTranslationStub(), $csrf_token))
+      ->setConstructorArgs(array($request_stack, $this->getStringTranslationStub(), $csrf_token, $logger))
       ->setMethods(array('doValidateForm'))
       ->getMock();
     $form_validator->expects($this->never())
@@ -109,7 +110,7 @@ class FormValidatorTest extends UnitTestCase {
       ->with('form_token', 'The form has become outdated. Copy any unsaved work in the form below and then <a href="/test/example?foo=bar">reload this page</a>.');
     $form_state->setValue('form_token', 'some_random_token');
     $form_validator->validateForm('test_form_id', $form, $form_state);
-    $this->assertTrue($form_state['validation_complete']);
+    $this->assertTrue($form_state->isValidationComplete());
   }
 
   /**
@@ -123,9 +124,10 @@ class FormValidatorTest extends UnitTestCase {
     $csrf_token->expects($this->once())
       ->method('validate')
       ->will($this->returnValue(TRUE));
+    $logger = $this->getMock('Psr\Log\LoggerInterface');
 
     $form_validator = $this->getMockBuilder('Drupal\Core\Form\FormValidator')
-      ->setConstructorArgs(array($request_stack, $this->getStringTranslationStub(), $csrf_token))
+      ->setConstructorArgs(array($request_stack, $this->getStringTranslationStub(), $csrf_token, $logger))
       ->setMethods(array('doValidateForm'))
       ->getMock();
     $form_validator->expects($this->once())
@@ -139,7 +141,7 @@ class FormValidatorTest extends UnitTestCase {
       ->method('setErrorByName');
     $form_state->setValue('form_token', 'some_random_token');
     $form_validator->validateForm('test_form_id', $form, $form_state);
-    $this->assertTrue($form_state['validation_complete']);
+    $this->assertTrue($form_state->isValidationComplete());
   }
 
   /**
@@ -180,10 +182,9 @@ class FormValidatorTest extends UnitTestCase {
 
     $triggering_element['#limit_validation_errors'] = $sections;
     $form = array();
-    $form_state = new FormState(array(
-      'values' => $values,
-      'triggering_element' => $triggering_element,
-    ));
+    $form_state = (new FormState())
+      ->setValues($values)
+      ->setTriggeringElement($triggering_element);
 
     $form_validator->validateForm('test_form_id', $form, $form_state);
     $this->assertSame($expected, $form_state->getValues());
@@ -290,7 +291,8 @@ class FormValidatorTest extends UnitTestCase {
     $form_validator->executeValidateHandlers($form, $form_state);
 
     // $form_state validate handlers will supersede $form handlers.
-    $form_state['validate_handlers'][] = array($mock, 'validate_handler');
+    $validate_handlers[] = [$mock, 'validate_handler'];
+    $form_state->setValidateHandlers($validate_handlers);
     $form_validator->executeValidateHandlers($form, $form_state);
   }
 
@@ -303,8 +305,10 @@ class FormValidatorTest extends UnitTestCase {
     $csrf_token = $this->getMockBuilder('Drupal\Core\Access\CsrfTokenGenerator')
       ->disableOriginalConstructor()
       ->getMock();
+    $logger = $this->getMock('Psr\Log\LoggerInterface');
+
     $form_validator = $this->getMockBuilder('Drupal\Core\Form\FormValidator')
-      ->setConstructorArgs(array(new RequestStack(), $this->getStringTranslationStub(), $csrf_token))
+      ->setConstructorArgs(array(new RequestStack(), $this->getStringTranslationStub(), $csrf_token, $logger))
       ->setMethods(array('executeValidateHandlers'))
       ->getMock();
     $form_validator->expects($this->once())
@@ -382,15 +386,17 @@ class FormValidatorTest extends UnitTestCase {
     $csrf_token = $this->getMockBuilder('Drupal\Core\Access\CsrfTokenGenerator')
       ->disableOriginalConstructor()
       ->getMock();
+    $logger = $this->getMock('Psr\Log\LoggerInterface');
+
     $form_validator = $this->getMockBuilder('Drupal\Core\Form\FormValidator')
-      ->setConstructorArgs(array(new RequestStack(), $this->getStringTranslationStub(), $csrf_token))
-      ->setMethods(array('watchdog'))
+      ->setConstructorArgs(array(new RequestStack(), $this->getStringTranslationStub(), $csrf_token, $logger))
+      ->setMethods(array('setError'))
       ->getMock();
 
     if ($call_watchdog) {
-      $form_validator->expects($this->once())
-        ->method('watchdog')
-        ->with('form');
+      $logger->expects($this->once())
+        ->method('error')
+        ->with($this->isType('string'), $this->isType('array'));
     }
 
     $form = array();
@@ -477,15 +483,4 @@ class FormValidatorTest extends UnitTestCase {
     );
   }
 
-}
-
-}
-
-namespace {
-  if (!defined('WATCHDOG_ERROR')) {
-    define('WATCHDOG_ERROR', 3);
-  }
-  if (!defined('WATCHDOG_NOTICE')) {
-    define('WATCHDOG_NOTICE', 5);
-  }
 }

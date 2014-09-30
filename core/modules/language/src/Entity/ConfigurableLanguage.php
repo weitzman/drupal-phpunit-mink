@@ -7,9 +7,10 @@
 
 namespace Drupal\language\Entity;
 
-use Drupal\Core\Language\Language as LanguageObject;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Language\LanguageManager;
+use Drupal\language\ConfigurableLanguageManager;
 use Drupal\language\ConfigurableLanguageManagerInterface;
 use Drupal\language\Exception\DeleteDefaultLanguageException;
 use Drupal\language\ConfigurableLanguageInterface;
@@ -20,7 +21,7 @@ use Drupal\language\ConfigurableLanguageInterface;
  * @ConfigEntityType(
  *   id = "configurable_language",
  *   label = @Translation("Language"),
- *   controllers = {
+ *   handlers = {
  *     "list_builder" = "Drupal\language\LanguageListBuilder",
  *     "access" = "Drupal\language\LanguageAccessControlHandler",
  *     "form" = {
@@ -77,23 +78,7 @@ class ConfigurableLanguage extends ConfigEntityBase implements ConfigurableLangu
    *
    * @var bool
    */
-  public $locked = FALSE;
-
-  /**
-   * Flag to indicate if the language entity is the default site language.
-   *
-   * This property is not saved to the language entity since there can be only
-   * one default language. It is saved to system.site:langcode and set on the
-   * container using the language.default service in when the entity is saved.
-   * The value is set correctly when a language entity is created or loaded.
-   *
-   * @see \Drupal\language\Entity\ConfigurableLanguage::postSave()
-   * @see \Drupal\language\Entity\ConfigurableLanguage::isDefault()
-   * @see \Drupal\language\Entity\ConfigurableLanguage::setDefault()
-   *
-   * @var bool
-   */
-  protected $default;
+  protected $locked = FALSE;
 
   /**
    * Used during saving to detect when the site becomes multilingual.
@@ -109,25 +94,17 @@ class ConfigurableLanguage extends ConfigEntityBase implements ConfigurableLangu
   protected $preSaveMultilingual;
 
   /**
-   * Sets the default flag on the language entity.
-   *
-   * @param bool $default
+   * {@inheritdoc}
    */
-  public function setDefault($default) {
-    $this->default = $default;
+  public function isDefault() {
+    return static::getDefaultLangcode() == $this->id();
   }
 
   /**
-   * Checks if the language entity is the site default language.
-   *
-   * @return bool
-   *   TRUE if the language entity is the site default language, FALSE if not.
+   * {@inheritdoc}
    */
-  public function isDefault() {
-    if (!isset($this->default)) {
-      return static::getDefaultLangcode() == $this->id();
-    }
-    return $this->default;
+  public function isLocked() {
+    return (bool) $this->locked;
   }
 
   /**
@@ -151,24 +128,14 @@ class ConfigurableLanguage extends ConfigEntityBase implements ConfigurableLangu
   public function postSave(EntityStorageInterface $storage, $update = TRUE) {
     parent::postSave($storage, $update);
 
-    // Only set the default language and save it to system.site configuration if
-    // it needs to updated.
-    if ($this->isDefault() && static::getDefaultLangcode() != $this->id()) {
-      // Update the config. Saving the configuration fires and event that causes
-      // the container to be rebuilt.
-      \Drupal::config('system.site')->set('langcode', $this->id())->save();
-      \Drupal::service('language.default')->set($this->toLanguageObject());
-    }
-
     $language_manager = \Drupal::languageManager();
     $language_manager->reset();
     if ($language_manager instanceof ConfigurableLanguageManagerInterface) {
       $language_manager->updateLockedLanguageWeights();
     }
 
-    // Update URL Prefixes for all languages after the new default language is
-    // propagated and the LanguageManagerInterface::getLanguages() cache is
-    // flushed.
+    // Update URL Prefixes for all languages after the
+    // LanguageManagerInterface::getLanguages() cache is flushed.
     language_negotiation_url_prefixes_update();
 
     // If after adding this language the site will become multilingual, we need
@@ -176,32 +143,18 @@ class ConfigurableLanguage extends ConfigEntityBase implements ConfigurableLangu
     if (!$this->preSaveMultilingual && !$update && $language_manager instanceof ConfigurableLanguageManagerInterface) {
       $language_manager::rebuildServices();
     }
-  }
-
-  /**
-   * Converts the ConfigurableLanguage entity to a Core Language value object.
-   *
-   * @todo fix return type hint after https://drupal.org/node/2246665 and
-   *   https://drupal.org/node/2246679.
-   *
-   * @return \Drupal\Core\Language\LanguageInterface
-   *   The language configuration entity expressed as a Language value object.
-   */
-  protected function toLanguageObject() {
-    return new LanguageObject(array(
-      'id' => $this->id(),
-      'name' => $this->label(),
-      'direction' => $this->direction,
-      'weight' => $this->weight,
-      'locked' => $this->locked,
-      'default' => $this->default,
-    ));
+    if (!$update) {
+      // Install any available language configuration overrides for the language.
+      \Drupal::service('language.config_factory_override')->installLanguageOverrides($this->id());
+    }
   }
 
   /**
    * {@inheritdoc}
    *
-   * @throws \RuntimeException
+   * @throws \DeleteDefaultLanguageException
+   *   Exception thrown if we're trying to delete the default language entity.
+   *   This is not allowed as a site must have a default language.
    */
   public static function preDelete(EntityStorageInterface $storage, array $entities) {
     $default_langcode = static::getDefaultLangcode();
@@ -215,12 +168,17 @@ class ConfigurableLanguage extends ConfigEntityBase implements ConfigurableLangu
   /**
    * {@inheritdoc}
    */
-  public function get($property_name) {
-    if ($property_name == 'default') {
-      return $this->isDefault();
+  public static function postDelete(EntityStorageInterface $storage, array $entities) {
+    parent::postDelete($storage, $entities);
+    $language_manager = \Drupal::languageManager();
+    $language_manager->reset();
+    if ($language_manager instanceof ConfigurableLanguageManagerInterface) {
+      $language_manager->updateLockedLanguageWeights();
     }
-    else {
-      return parent::get($property_name);
+    // If after deleting this language the site will become monolingual, we need
+    // to rebuild language services.
+    if (!\Drupal::languageManager()->isMultilingual()) {
+      ConfigurableLanguageManager::rebuildServices();
     }
   }
 
@@ -233,6 +191,64 @@ class ConfigurableLanguage extends ConfigEntityBase implements ConfigurableLangu
   protected static function getDefaultLangcode() {
     $language = \Drupal::service('language.default')->get();
     return $language->getId();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getName() {
+    return $this->label();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getId() {
+    return $this->id();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getDirection() {
+    return $this->direction;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getWeight() {
+    return $this->weight;
+  }
+
+  /**
+   * Creates a configurable language object from a langcode.
+   *
+   * @param string $langcode
+   *   The language code to use to create the object.
+   *
+   * @return $this
+   *
+   * @see \Drupal\Core\Language\LanguageManager::getStandardLanguageList()
+   */
+  public static function createFromLangcode($langcode) {
+    $standard_languages = LanguageManager::getStandardLanguageList();
+    if (!isset($standard_languages[$langcode])) {
+      // Drupal does not know about this language, so we set its values with the
+      // best guess. The user will be able to edit afterwards.
+      return static::create(array(
+        'id' => $langcode,
+        'label' => $langcode,
+      ));
+    }
+    else {
+      // A known predefined language, details will be filled in properly.
+      return static::create(array(
+        'id' => $langcode,
+        'label' => $standard_languages[$langcode][0],
+        'direction' => isset($standard_languages[$langcode][2]) ? $standard_languages[$langcode][2] : static::DIRECTION_LTR,
+      ));
+    }
   }
 
 }

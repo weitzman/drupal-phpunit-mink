@@ -20,18 +20,19 @@ use Drupal\user\UserInterface;
  * @ContentEntityType(
  *   id = "entity_test",
  *   label = @Translation("Test entity"),
- *   controllers = {
+ *   handlers = {
  *     "list_builder" = "Drupal\entity_test\EntityTestListBuilder",
  *     "view_builder" = "Drupal\entity_test\EntityTestViewBuilder",
+ *     "views_data" = "Drupal\entity_test\EntityTestViewsData",
  *     "access" = "Drupal\entity_test\EntityTestAccessControlHandler",
  *     "form" = {
  *       "default" = "Drupal\entity_test\EntityTestForm",
  *       "delete" = "Drupal\entity_test\EntityTestDeleteForm"
  *     },
- *     "translation" = "Drupal\content_translation\ContentTranslationHandler"
+ *     "translation" = "Drupal\content_translation\ContentTranslationHandler",
+ *     "views_data" = "Drupal\views\EntityViewsData"
  *   },
  *   base_table = "entity_test",
- *   fieldable = TRUE,
  *   persistent_cache = FALSE,
  *   entity_keys = {
  *     "id" = "id",
@@ -40,11 +41,11 @@ use Drupal\user\UserInterface;
  *     "label" = "name"
  *   },
  *   links = {
- *     "canonical" = "entity_test.render",
- *     "edit-form" = "entity_test.edit_entity_test",
- *     "delete-form" = "entity_test.delete_entity_test",
- *     "admin-form" = "entity_test.admin_entity_test"
- *   }
+ *     "canonical" = "entity.entity_test.canonical",
+ *     "edit-form" = "entity.entity_test.edit_form",
+ *     "delete-form" = "entity.entity_test.delete_form",
+ *   },
+ *   field_ui_base_route = "entity.entity_test.admin_form",
  * )
  */
 class EntityTest extends ContentEntityBase implements EntityOwnerInterface {
@@ -87,6 +88,10 @@ class EntityTest extends ContentEntityBase implements EntityOwnerInterface {
         'label' => 'hidden',
         'type' => 'string',
         'weight' => -5,
+      ))
+      ->setDisplayOptions('form', array(
+        'type' => 'string',
+        'weight' => -5,
       ));
 
     // @todo: Add allowed values validation.
@@ -98,8 +103,22 @@ class EntityTest extends ContentEntityBase implements EntityOwnerInterface {
     $fields['user_id'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('User ID'))
       ->setDescription(t('The ID of the associated user.'))
-      ->setSettings(array('target_type' => 'user'))
-      ->setTranslatable(TRUE);
+      ->setSetting('target_type', 'user')
+      ->setSetting('handler', 'default')
+      // Default EntityTest entities to have the root user as the owner, to
+      // simplify testing.
+      ->setDefaultValue(array(0 => 1))
+      ->setTranslatable(TRUE)
+      ->setDisplayOptions('form', array(
+        'type' => 'entity_reference_autocomplete',
+        'weight' => -1,
+        'settings' => array(
+          'match_operator' => 'CONTAINS',
+          'size' => '60',
+          'autocomplete_type' => 'tags',
+          'placeholder' => '',
+        ),
+      ));
 
     return $fields;
   }

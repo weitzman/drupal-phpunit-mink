@@ -96,7 +96,8 @@ class BookAdminEditForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Save elements in the same order as defined in post rather than the form.
     // This ensures parents are updated before their children, preventing orphans.
-    $order = array_flip(array_keys($form_state['input']['table']));
+    $user_input = $form_state->getUserInput();
+    $order = array_flip(array_keys($user_input['table']));
     $form['table'] = array_merge($order, $form['table']);
 
     foreach (Element::children($form['table']) as $key) {
@@ -120,7 +121,7 @@ class BookAdminEditForm extends FormBase {
           $node->book['link_title'] = $values['title'];
           $node->setNewRevision();
           $node->save();
-          $this->logger('content')->notice('book: updated %title.', array('%title' => $node->label(), 'link' => l($this->t('View'), 'node/' . $node->id())));
+          $this->logger('content')->notice('book: updated %title.', array('%title' => $node->label(), 'link' => $node->link($this->t('View'))));
         }
       }
     }

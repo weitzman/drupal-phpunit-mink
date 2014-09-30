@@ -39,7 +39,7 @@ class EntityValidationTest extends EntityUnitTestBase {
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
 
     $this->installEntitySchema('entity_test_rev');
@@ -133,7 +133,7 @@ class EntityValidationTest extends EntityUnitTestBase {
 
     // Make sure the information provided by a violation is correct.
     $violation = $violations[0];
-    $this->assertEqual($violation->getRoot(), $test_entity, 'Violation root is entity.');
+    $this->assertEqual($violation->getRoot()->getValue(), $test_entity, 'Violation root is entity.');
     $this->assertEqual($violation->getPropertyPath(), 'name.0.value', 'Violation property path is correct.');
     $this->assertEqual($violation->getInvalidValue(), $test_entity->name->value, 'Violation contains invalid value.');
 
@@ -151,7 +151,7 @@ class EntityValidationTest extends EntityUnitTestBase {
 
     // Make sure the information provided by a violation is correct.
     $violation = $violations[0];
-    $this->assertEqual($violation->getRoot(), $test_entity, 'Violation root is entity.');
+    $this->assertEqual($violation->getRoot()->getValue(), $test_entity, 'Violation root is entity.');
     $this->assertEqual($violation->getPropertyPath(), 'field_test_text.0.format', 'Violation property path is correct.');
     $this->assertEqual($violation->getInvalidValue(), $test_entity->field_test_text->format, 'Violation contains invalid value.');
   }

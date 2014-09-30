@@ -38,14 +38,14 @@ class AdminTest extends WebTestBase {
    */
   public static $modules = array('locale');
 
-  function setUp() {
+  protected function setUp() {
     // testAdminPages() requires Locale module.
     parent::setUp();
 
     // Create an administrator with all permissions, as well as a regular user
     // who can only access administration pages and perform some Locale module
     // administrative tasks, but not all of them.
-    $this->admin_user = $this->drupalCreateUser(array_keys(\Drupal::moduleHandler()->invokeAll('permission')));
+    $this->admin_user = $this->drupalCreateUser(array_keys(\Drupal::service('user.permissions')->getPermissions()));
     $this->web_user = $this->drupalCreateUser(array(
       'access administration pages',
       'translate interface',

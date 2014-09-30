@@ -20,10 +20,12 @@ use Drupal\taxonomy\TermInterface;
  *   id = "taxonomy_term",
  *   label = @Translation("Taxonomy term"),
  *   bundle_label = @Translation("Vocabulary"),
- *   controllers = {
+ *   handlers = {
  *     "storage" = "Drupal\taxonomy\TermStorage",
+ *     "storage_schema" = "Drupal\taxonomy\TermStorageSchema",
  *     "view_builder" = "Drupal\taxonomy\TermViewBuilder",
  *     "access" = "Drupal\taxonomy\TermAccessControlHandler",
+ *     "views_data" = "Drupal\taxonomy\TermViewsData",
  *     "form" = {
  *       "default" = "Drupal\taxonomy\TermForm",
  *       "delete" = "Drupal\taxonomy\Form\TermDeleteForm"
@@ -33,7 +35,6 @@ use Drupal\taxonomy\TermInterface;
  *   base_table = "taxonomy_term_data",
  *   data_table = "taxonomy_term_field_data",
  *   uri_callback = "taxonomy_term_uri",
- *   fieldable = TRUE,
  *   translatable = TRUE,
  *   entity_keys = {
  *     "id" = "tid",
@@ -42,11 +43,11 @@ use Drupal\taxonomy\TermInterface;
  *     "uuid" = "uuid"
  *   },
  *   bundle_entity_type = "taxonomy_vocabulary",
+ *   field_ui_base_route = "entity.taxonomy_vocabulary.overview_form",
  *   links = {
- *     "canonical" = "taxonomy.term_page",
- *     "delete-form" = "taxonomy.term_delete",
- *     "edit-form" = "taxonomy.term_edit",
- *     "admin-form" = "taxonomy.overview_terms"
+ *     "canonical" = "entity.taxonomy_term.canonical",
+ *     "delete-form" = "entity.taxonomy_term.delete_form",
+ *     "edit-form" = "entity.taxonomy_term.edit_form",
  *   },
  *   permission_granularity = "bundle"
  * )
@@ -90,7 +91,7 @@ class Term extends ContentEntityBase implements TermInterface {
 
     // Only change the parents if a value is set, keep the existing values if
     // not.
-    if (isset($this->parent->value)) {
+    if (isset($this->parent->target_id)) {
       $storage->deleteTermHierarchy(array($this->id()));
       $storage->updateTermHierarchy($this);
     }
@@ -132,7 +133,7 @@ class Term extends ContentEntityBase implements TermInterface {
         'weight' => -5,
       ))
       ->setDisplayOptions('form', array(
-        'type' => 'string',
+        'type' => 'string_textfield',
         'weight' => -5,
       ))
       ->setDisplayConfigurable('form', TRUE);
@@ -141,7 +142,6 @@ class Term extends ContentEntityBase implements TermInterface {
       ->setLabel(t('Description'))
       ->setDescription(t('A description of the term.'))
       ->setTranslatable(TRUE)
-      ->setSetting('text_processing', 1)
       ->setDisplayOptions('view', array(
         'label' => 'hidden',
         'type' => 'text_default',
@@ -159,16 +159,12 @@ class Term extends ContentEntityBase implements TermInterface {
       ->setDescription(t('The weight of this term in relation to other terms.'))
       ->setDefaultValue(0);
 
-    // @todo Convert this to an entity_reference field, see
-    // https://drupal.org/node/1915056
-    $fields['parent'] = BaseFieldDefinition::create('integer')
+    $fields['parent'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Term Parents'))
       ->setDescription(t('The parents of this term.'))
+      ->setSetting('target_type', 'taxonomy_term')
       ->setCardinality(BaseFieldDefinition::CARDINALITY_UNLIMITED)
-      // Save new terms with no parents by default.
-      ->setDefaultValue(0)
-      ->setSetting('unsigned', TRUE)
-      ->addConstraint('TermParent', array());
+      ->setCustomStorage(TRUE);
 
     $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))

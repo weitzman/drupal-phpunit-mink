@@ -97,7 +97,7 @@ class FileWidget extends WidgetBase {
     }
 
     $title = String::checkPlain($this->fieldDefinition->getLabel());
-    $description = field_filter_xss($this->fieldDefinition->getDescription());
+    $description = $this->fieldFilterXss($this->fieldDefinition->getDescription());
 
     $elements = array();
 
@@ -132,7 +132,7 @@ class FileWidget extends WidgetBase {
     }
 
     $empty_single_allowed = ($cardinality == 1 && $delta == 0);
-    $empty_multiple_allowed = ($cardinality == FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED || $delta < $cardinality) && empty($form_state['programmed']);
+    $empty_multiple_allowed = ($cardinality == FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED || $delta < $cardinality) && !$form_state->isProgrammed();
 
     // Add one more empty row for new uploads except when this is a programmed
     // multiple form as it is not necessary.
@@ -487,14 +487,13 @@ class FileWidget extends WidgetBase {
    */
   public static function submit($form, FormStateInterface $form_state) {
     // During the form rebuild, formElement() will create field item widget
-    // elements using re-indexed deltas, so clear out $form_state['input'] to
+    // elements using re-indexed deltas, so clear out FormState::$input to
     // avoid a mismatch between old and new deltas. The rebuilt elements will
     // have #default_value set appropriately for the current state of the field,
     // so nothing is lost in doing this.
-    $parents = array_slice($form_state['triggering_element']['#parents'], 0, -2);
-    NestedArray::setValue($form_state['input'], $parents, NULL);
-
-    $button = $form_state['triggering_element'];
+    $button = $form_state->getTriggeringElement();
+    $parents = array_slice($button['#parents'], 0, -2);
+    NestedArray::setValue($form_state->getUserInput(), $parents, NULL);
 
     // Go one level up in the form, to the widgets container.
     $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -1));

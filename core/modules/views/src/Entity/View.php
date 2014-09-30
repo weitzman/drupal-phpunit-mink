@@ -19,7 +19,7 @@ use Drupal\views\ViewStorageInterface;
  * @ConfigEntityType(
  *   id = "view",
  *   label = @Translation("View"),
- *   controllers = {
+ *   handlers = {
  *     "access" = "Drupal\views\ViewAccessControlHandler"
  *   },
  *   admin_permission = "administer views",
@@ -343,6 +343,23 @@ class View extends ConfigEntityBase implements ViewStorageInterface {
     parent::postCreate($storage);
 
     $this->mergeDefaultDisplaysOptions();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function preDelete(EntityStorageInterface $storage, array $entities) {
+    parent::preDelete($storage, $entities);
+
+    // Call the remove() hook on the individual displays.
+    /** @var \Drupal\views\ViewStorageInterface $entity */
+    foreach ($entities as $entity) {
+      $executable = Views::executableFactory()->get($entity);
+      foreach ($entity->get('display') as $display_id => $display) {
+        $executable->setDisplay($display_id);
+        $executable->getDisplay()->remove();
+      }
+    }
   }
 
   /**

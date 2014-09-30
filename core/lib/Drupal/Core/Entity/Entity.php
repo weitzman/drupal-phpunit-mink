@@ -9,15 +9,13 @@ namespace Drupal\Core\Entity;
 
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
-use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Utility\String;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\Entity\Exception\ConfigEntityIdLengthException;
-use Drupal\Core\Entity\Exception\AmbiguousEntityClassException;
-use Drupal\Core\Entity\Exception\NoCorrespondingEntityClassException;
 use Drupal\Core\Entity\Exception\UndefinedLinkTemplateException;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\Link;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 
@@ -25,7 +23,10 @@ use Drupal\Core\Url;
  * Defines a base entity class.
  */
 abstract class Entity implements EntityInterface {
-  use DependencySerializationTrait;
+
+  use DependencySerializationTrait {
+    __sleep as traitSleep;
+  }
 
   /**
    * The entity type.
@@ -40,6 +41,13 @@ abstract class Entity implements EntityInterface {
    * @var bool
    */
   protected $enforceIsNew;
+
+  /**
+   * A typed data object wrapping this entity.
+   *
+   * @var \Drupal\Core\TypedData\ComplexDataInterface
+   */
+  protected $typedData;
 
   /**
    * Constructs an Entity object.
@@ -147,7 +155,7 @@ abstract class Entity implements EntityInterface {
   /**
    * {@inheritdoc}
    */
-  public function urlInfo($rel = 'canonical') {
+  public function urlInfo($rel = 'canonical', array $options = []) {
     if ($this->isNew()) {
       throw new EntityMalformedException(sprintf('The "%s" entity type has not been saved, and cannot have a URI.', $this->getEntityTypeId()));
     }
@@ -184,13 +192,14 @@ abstract class Entity implements EntityInterface {
       }
     }
 
-    // Pass the entity data to url() so that alter functions do not need to
+    // Pass the entity data to _url() so that alter functions do not need to
     // look up this entity again.
     $uri
       ->setOption('entity_type', $this->getEntityTypeId())
       ->setOption('entity', $this);
-
-    return $uri;
+    $uri_options = $uri->getOptions();
+    $uri_options += $options;
+    return $uri->setOptions($uri_options);
   }
 
   /**
@@ -219,6 +228,19 @@ abstract class Entity implements EntityInterface {
    */
   protected function linkTemplates() {
     return $this->getEntityType()->getLinkTemplates();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function link($text = NULL, $rel = 'canonical', array $options = []) {
+    if (is_null($text)) {
+      $text = $this->label();
+    }
+    $url = $this->urlInfo($rel);
+    $options += $url->getOptions();
+    $url->setOptions($options);
+    return (new Link($text, $url))->toString();
   }
 
   /**
@@ -254,11 +276,6 @@ abstract class Entity implements EntityInterface {
     // The entity ID is needed as a route parameter.
     $uri_route_parameters[$this->getEntityTypeId()] = $this->id();
 
-    // The 'admin-form' link requires the bundle as a route parameter if the
-    // entity type uses bundles.
-    if ($rel == 'admin-form' && $this->getEntityType()->getBundleEntityType() != 'bundle') {
-      $uri_route_parameters[$this->getEntityType()->getBundleEntityType()] = $this->bundle();
-    }
     return $uri_route_parameters;
   }
 
@@ -277,15 +294,15 @@ abstract class Entity implements EntityInterface {
   /**
    * {@inheritdoc}
    */
-  public function access($operation, AccountInterface $account = NULL) {
+  public function access($operation, AccountInterface $account = NULL, $return_as_object = FALSE) {
     if ($operation == 'create') {
       return $this->entityManager()
         ->getAccessControlHandler($this->entityTypeId)
-        ->createAccess($this->bundle(), $account);
+        ->createAccess($this->bundle(), $account, [], $return_as_object);
     }
-    return $this->entityManager()
+    return  $this->entityManager()
       ->getAccessControlHandler($this->entityTypeId)
-      ->access($this, $operation, LanguageInterface::LANGCODE_DEFAULT, $account);
+      ->access($this, $operation, LanguageInterface::LANGCODE_DEFAULT, $account, $return_as_object);
   }
 
   /**
@@ -409,7 +426,7 @@ abstract class Entity implements EntityInterface {
    * {@inheritdoc}
    */
   public function getCacheTag() {
-    return array($this->entityTypeId => array($this->id()));
+    return [$this->entityTypeId . ':' . $this->id()];
   }
 
   /**
@@ -417,7 +434,7 @@ abstract class Entity implements EntityInterface {
    */
   public function getListCacheTags() {
     // @todo Add bundle-specific listing cache tag? https://drupal.org/node/2145751
-    return array($this->entityTypeId . 's' => TRUE);
+    return [$this->entityTypeId . 's'];
   }
 
   /**
@@ -458,7 +475,7 @@ abstract class Entity implements EntityInterface {
     }
 
     foreach ($referenced_entities as $entity_type => $entities) {
-      if ($this->entityManager()->hasController($entity_type, 'view_builder')) {
+      if ($this->entityManager()->hasHandler($entity_type, 'view_builder')) {
         $this->entityManager()->getViewBuilder($entity_type)->resetCache($entities);
       }
     }
@@ -478,7 +495,7 @@ abstract class Entity implements EntityInterface {
     $tags = $this->getListCacheTags();
     if ($update) {
       // An existing entity was updated, also invalidate its unique cache tag.
-      $tags = NestedArray::mergeDeep($tags, $this->getCacheTag());
+      $tags = Cache::mergeTags($tags, $this->getCacheTag());
       $this->onUpdateBundleEntity();
     }
     Cache::invalidateTags($tags);
@@ -498,7 +515,7 @@ abstract class Entity implements EntityInterface {
       // other pages than the one it's on. The one it's on is handled by its own
       // cache tag, but subsequent list pages would not be invalidated, hence we
       // must invalidate its list cache tags as well.)
-      $tags = NestedArray::mergeDeepArray(array($tags, $entity->getCacheTag(), $entity->getListCacheTags()));
+      $tags = Cache::mergeTags($tags, $entity->getCacheTag(), $entity->getListCacheTags());
       $entity->onSaveOrDelete();
     }
     Cache::invalidateTags($tags);
@@ -515,7 +532,7 @@ abstract class Entity implements EntityInterface {
       // builder class, then invalidate the render cache of entities for which
       // this entity is a bundle.
       $entity_manager = $this->entityManager();
-      if ($entity_manager->hasController($bundle_of, 'view_builder')) {
+      if ($entity_manager->hasHandler($bundle_of, 'view_builder')) {
         $entity_manager->getViewBuilder($bundle_of)->resetCache();
       }
       // Entity bundle field definitions may depend on bundle settings.
@@ -550,6 +567,25 @@ abstract class Entity implements EntityInterface {
    */
   public function toArray() {
     return array();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getTypedData() {
+    if (!isset($this->typedData)) {
+      $class = \Drupal::typedDataManager()->getDefinition('entity')['class'];
+      $this->typedData = $class::createFromEntity($this);
+    }
+    return $this->typedData;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __sleep() {
+    $this->typedData = NULL;
+    return $this->traitSleep();
   }
 
 }

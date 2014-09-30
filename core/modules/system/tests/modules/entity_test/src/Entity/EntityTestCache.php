@@ -13,7 +13,7 @@ namespace Drupal\entity_test\Entity;
  * @ContentEntityType(
  *   id = "entity_test_cache",
  *   label = @Translation("Test entity with field cache"),
- *   controllers = {
+ *   handlers = {
  *     "access" = "Drupal\entity_test\EntityTestAccessControlHandler",
  *     "form" = {
  *       "default" = "Drupal\entity_test\EntityTestForm"
@@ -21,7 +21,6 @@ namespace Drupal\entity_test\Entity;
  *     "translation" = "Drupal\content_translation\ContentTranslationHandler"
  *   },
  *   base_table = "entity_test",
- *   fieldable = TRUE,
  *   entity_keys = {
  *     "id" = "id",
  *     "uuid" = "uuid",

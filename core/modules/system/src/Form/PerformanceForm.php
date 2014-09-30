@@ -107,7 +107,7 @@ class PerformanceForm extends ConfigFormBase {
     $form['clear_cache']['clear'] = array(
       '#type' => 'submit',
       '#value' => t('Clear all caches'),
-      '#submit' => array(array($this, 'submitCacheClear')),
+      '#submit' => array('::submitCacheClear'),
     );
 
     $form['caching'] = array(
@@ -116,7 +116,7 @@ class PerformanceForm extends ConfigFormBase {
       '#open' => TRUE,
     );
     // Identical options to the ones for block caching.
-    // @see \Drupal\block\BlockBase::buildConfigurationForm()
+    // @see \Drupal\Core\Block\BlockBase::buildConfigurationForm()
     $period = array(0, 60, 180, 300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 86400);
     $period = array_map(array($this->dateFormatter, 'formatInterval'), array_combine($period, $period));
     $period[0] = '<' . t('no caching') . '>';
@@ -140,7 +140,7 @@ class PerformanceForm extends ConfigFormBase {
     $disabled = !$is_writable;
     $disabled_message = '';
     if (!$is_writable) {
-      $disabled_message = ' ' . t('<strong class="error">Set up the <a href="!file-system">public files directory</a> to make these optimizations available.</strong>', array('!file-system' => url('admin/config/media/file-system')));
+      $disabled_message = ' ' . t('<strong class="error">Set up the <a href="!file-system">public files directory</a> to make these optimizations available.</strong>', array('!file-system' => $this->url('system.file_system_settings')));
     }
 
     $form['bandwidth_optimization'] = array(
@@ -152,7 +152,7 @@ class PerformanceForm extends ConfigFormBase {
 
     $form['bandwidth_optimization']['page_compression'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Compress cached pages.'),
+      '#title' => t('Compress cached pages'),
       '#default_value' => $config->get('response.gzip'),
       '#states' => array(
         'visible' => array(
@@ -162,13 +162,13 @@ class PerformanceForm extends ConfigFormBase {
     );
     $form['bandwidth_optimization']['preprocess_css'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Aggregate CSS files.'),
+      '#title' => t('Aggregate CSS files'),
       '#default_value' => $config->get('css.preprocess'),
       '#disabled' => $disabled,
     );
     $form['bandwidth_optimization']['preprocess_js'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Aggregate JavaScript files.'),
+      '#title' => t('Aggregate JavaScript files'),
       '#default_value' => $config->get('js.preprocess'),
       '#disabled' => $disabled,
     );

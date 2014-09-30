@@ -133,8 +133,8 @@ class UrlHelper {
    *   - query: An array of query parameters from $url, if they exist.
    *   - fragment: The fragment component from $url, if it exists.
    *
-   * @see l()
-   * @see url()
+   * @see \Drupal\Core\Utility\LinkGenerator
+   * @see _url()
    * @see http://tools.ietf.org/html/rfc3986
    *
    * @ingroup php_wrappers
@@ -151,7 +151,12 @@ class UrlHelper {
     if (strpos($url, '://') !== FALSE) {
       // Split off everything before the query string into 'path'.
       $parts = explode('?', $url);
-      $options['path'] = $parts[0];
+
+      // Don't support URLs without a path, like 'http://'.
+      list(, $path) = explode('://', $parts[0], 2);
+      if ($path != '') {
+        $options['path'] = $parts[0];
+      }
       // If there is a query string, transform it into keyed query parameters.
       if (isset($parts[1])) {
         $query_parts = explode('#', $parts[1]);
@@ -283,7 +288,7 @@ class UrlHelper {
    * to being output to an HTML attribute value. It is often called as part of
    * check_url() or Drupal\Component\Utility\Xss::filter(), but those functions
    * return an HTML-encoded string, so this function can be called independently
-   * when the output needs to be a plain-text string for passing to t(), l(),
+   * when the output needs to be a plain-text string for passing to t(), _l(),
    * Drupal\Core\Template\Attribute, or another function that will call
    * \Drupal\Component\Utility\String::checkPlain() separately.
    *

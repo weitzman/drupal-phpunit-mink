@@ -144,7 +144,7 @@ class MenuForm extends EntityForm {
       // equally separated yet. Therefore, we use a $form_state key to point to
       // the parents of the form section.
       // @see self::submitOverviewForm()
-      $form_state['menu_overview_form_parents'] = array('links');
+      $form_state->set('menu_overview_form_parents', ['links']);
       $form['links'] = array();
       $form['links'] = $this->buildOverviewForm($form['links'], $form_state);
     }
@@ -182,7 +182,7 @@ class MenuForm extends EntityForm {
 
     $status = $menu->save();
 
-    $edit_link = $this->linkGenerator->generateFromUrl($this->t('Edit'), $this->entity->urlInfo());
+    $edit_link = $this->entity->link($this->t('Edit'));
     if ($status == SAVED_UPDATED) {
       drupal_set_message($this->t('Menu %label has been updated.', array('%label' => $menu->label())));
       $this->logger('menu')->notice('Menu %label has been updated.', array('%label' => $menu->label(), 'link' => $edit_link));
@@ -214,7 +214,10 @@ class MenuForm extends EntityForm {
     // section.
     $form['#tree'] = TRUE;
     $form['#theme'] = 'menu_overview_form';
-    $form_state->setIfNotExists('menu_overview_form_parents', array());
+
+    if (!$form_state->has('menu_overview_form_parents')) {
+      $form_state->set('menu_overview_form_parents', []);
+    }
 
     $form['#attached']['css'] = array(drupal_get_path('module', 'menu') . '/css/menu.admin.css');
 
@@ -239,8 +242,8 @@ class MenuForm extends EntityForm {
     $delta = max($count($tree), 50);
 
     $form = array_merge($form, $this->buildOverviewTreeForm($tree, $delta));
-    $destination = $this->getUrlGenerator()->getPathFromRoute('menu_ui.menu_edit', array('menu' => $this->entity->id()));
-    $url = $destination = $this->url('menu_link_content.link_add', array('menu' => $this->entity->id()), array('query' => array('destination' => $destination)));
+    $destination = $this->getUrlGenerator()->getPathFromRoute('entity.menu.edit_form', array('menu' => $this->entity->id()));
+    $url = $destination = $this->url('entity.menu.add_link_form', array('menu' => $this->entity->id()), array('query' => array('destination' => $destination)));
     $form['#empty_text'] = $this->t('There are no menu links yet. <a href="@url">Add link</a>.', array('@url' => $url));
 
     return $form;
@@ -266,7 +269,7 @@ class MenuForm extends EntityForm {
         $id = 'menu_plugin_id:' . $link->getPluginId();
         $form[$id]['#item'] = $element;
         $form[$id]['#attributes'] = $link->isEnabled() ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled'));
-        $form[$id]['title']['#markup'] = $this->linkGenerator->generateFromUrl($link->getTitle(), $link->getUrlObject(), $link->getOptions());
+        $form[$id]['title']['#markup'] = $this->linkGenerator->generate($link->getTitle(), $link->getUrlObject(), $link->getOptions());
         if (!$link->isEnabled()) {
           $form[$id]['title']['#markup'] .= ' (' . $this->t('disabled') . ')';
         }
@@ -356,8 +359,8 @@ class MenuForm extends EntityForm {
     // within forms, but does not allow to handle the form section's submission
     // equally separated yet. Therefore, we use a $form_state key to point to
     // the parents of the form section.
-    $parents = $form_state['menu_overview_form_parents'];
-    $input = NestedArray::getValue($form_state['input'], $parents);
+    $parents = $form_state->get('menu_overview_form_parents');
+    $input = NestedArray::getValue($form_state->getUserInput(), $parents);
     $form = &NestedArray::getValue($complete_form, $parents);
 
     // When dealing with saving menu items, the order in which these items are

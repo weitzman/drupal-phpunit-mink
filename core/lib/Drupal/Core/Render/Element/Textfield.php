@@ -67,7 +67,7 @@ class Textfield extends FormElement {
   public static function preRenderTextfield($element) {
     $element['#attributes']['type'] = 'text';
     Element::setAttributes($element, array('id', 'name', 'value', 'size', 'maxlength', 'placeholder'));
-    _form_set_attributes($element, array('form-text'));
+    static::setAttributes($element, array('form-text'));
 
     return $element;
   }

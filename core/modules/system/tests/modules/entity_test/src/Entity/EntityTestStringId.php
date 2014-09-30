@@ -15,7 +15,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  * @ContentEntityType(
  *   id = "entity_test_string_id",
  *   label = @Translation("Test entity with string_id"),
- *   controllers = {
+ *   handlers = {
  *     "access" = "Drupal\entity_test\EntityTestAccessControlHandler",
  *     "form" = {
  *       "default" = "Drupal\entity_test\EntityTestForm"
@@ -23,18 +23,16 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *     "translation" = "Drupal\content_translation\ContentTranslationHandler"
  *   },
  *   base_table = "entity_test_string",
- *   fieldable = TRUE,
- *   field_cache = TRUE,
  *   entity_keys = {
  *     "id" = "id",
  *     "uuid" = "uuid",
  *     "bundle" = "type"
  *   },
  *   links = {
- *     "canonical" = "entity_test.render",
- *     "edit-form" = "entity_test.edit_entity_test_string_id",
- *     "admin-form" = "entity_test.admin_entity_test_string_id"
- *   }
+ *     "canonical" = "entity.entity_test.canonical",
+ *     "edit-form" = "entity.entity_test_string_id.edit_form",
+ *   },
+ *   field_ui_base_route = "entity.entity_test_string_id.admin_form",
  * )
  */
 class EntityTestStringId extends EntityTest {

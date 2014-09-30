@@ -29,12 +29,10 @@ class CommentStringIdEntitiesTest extends KernelTestBase {
     'field_ui',
     'entity',
     'entity_test',
-    // EMAIL_MAX_LENGTH constant.
-    'system',
     'text',
   );
 
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
     $this->installEntitySchema('comment');
     $this->installSchema('comment', array('comment_entity_statistics'));
@@ -53,7 +51,7 @@ class CommentStringIdEntitiesTest extends KernelTestBase {
       ));
       $bundle->save();
       $field_storage = entity_create('field_storage_config', array(
-        'name' => 'foo',
+        'field_name' => 'foo',
         'entity_type' => 'entity_test_string_id',
         'settings' => array(
           'comment_type' => 'entity_test_string_id',

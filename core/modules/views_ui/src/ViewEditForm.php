@@ -20,6 +20,7 @@ use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
 use Drupal\user\TempStoreFactory;
 use Drupal\views\Views;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -82,15 +83,15 @@ class ViewEditForm extends ViewFormBase {
   public function form(array $form, FormStateInterface $form_state) {
     $view = $this->entity;
     $display_id = $this->displayID;
-    // Do not allow the form to be cached, because $form_state['view'] can become
+    // Do not allow the form to be cached, because $form_state->get('view') can become
     // stale between page requests.
     // See views_ui_ajax_get_form() for how this affects #ajax.
     // @todo To remove this and allow the form to be cacheable:
-    //   - Change $form_state['view'] to $form_state['temporary']['view'].
-    //   - Add a #process function to initialize $form_state['temporary']['view']
+    //   - Change $form_state->get('view') to $form_state->getTemporary()['view'].
+    //   - Add a #process function to initialize $form_state->getTemporary()['view']
     //     on cached form submissions.
-    //   - Use form_load_include().
-    $form_state['no_cache'] = TRUE;
+    //   - Use \Drupal\Core\Form\FormStateInterface::loadInclude().
+    $form_state->disableCache();
 
     if ($display_id) {
       if (!$view->getExecutable()->setDisplay($display_id)) {
@@ -141,7 +142,7 @@ class ViewEditForm extends ViewFormBase {
       $lock_message_substitutions = array(
         '!user' => drupal_render($username),
         '!age' => $this->dateFormatter->formatInterval(REQUEST_TIME - $view->lock->updated),
-        '!break' => $view->url('break-lock'),
+        '!break' => $view->url('break-lock-form'),
       );
       $form['locked'] = array(
         '#type' => 'container',
@@ -177,7 +178,7 @@ class ViewEditForm extends ViewFormBase {
 
     // The rest requires a display to be selected.
     if ($display_id) {
-      $form_state['display_id'] = $display_id;
+      $form_state->set('display_id', $display_id);
 
       // The part of the page where editing will take place.
       $form['displays']['settings'] = array(
@@ -240,9 +241,7 @@ class ViewEditForm extends ViewFormBase {
     $actions['cancel'] = array(
       '#type' => 'submit',
       '#value' => $this->t('Cancel'),
-      '#submit' => array(
-        array($this, 'cancel'),
-      ),
+      '#submit' => array('::cancel'),
     );
     if ($this->entity->isLocked()) {
       $actions['submit']['#access'] = FALSE;
@@ -271,9 +270,7 @@ class ViewEditForm extends ViewFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submit(array $form, FormStateInterface $form_state) {
-    parent::submit($form, $form_state);
-
+  public function save(array $form, FormStateInterface $form_state) {
     $view = $this->entity;
     $executable = $view->getExecutable();
 
@@ -298,7 +295,7 @@ class ViewEditForm extends ViewFormBase {
         unset($displays[$id]);
 
         // Redirect the user to the renamed display to be sure that the page itself exists and doesn't throw errors.
-        $form_state->setRedirect('views_ui.edit_display', array(
+        $form_state->setRedirect('entity.view.edit_display_form', array(
           'view' => $view->id(),
           'display_id' => $new_id,
         ));
@@ -326,13 +323,11 @@ class ViewEditForm extends ViewFormBase {
           $query->remove('destination');
         }
       }
-      if (!UrlHelper::isExternal($destination)) {
-        $destination = $GLOBALS['base_url'] . '/' . $destination;
-      }
-      $form_state->setRedirectUrl(Url::createFromPath($destination));
+      $form_state->setRedirectUrl(Url::fromUri("base://$destination"));
     }
 
     $view->save();
+
     drupal_set_message($this->t('The view %name has been saved.', array('%name' => $view->label())));
 
     // Remove this view from cache so we can edit it properly.
@@ -418,7 +413,7 @@ class ViewEditForm extends ViewFormBase {
             '#type' => 'submit',
             '#value' => $this->t('Enable !display_title', array('!display_title' => $display_title)),
             '#limit_validation_errors' => array(),
-            '#submit' => array(array($this, 'submitDisplayEnable'), array($this, 'submitDelayDestination')),
+            '#submit' => array('::submitDisplayEnable', '::submitDelayDestination'),
             '#prefix' => '<li class="enable">',
             "#suffix" => '</li>',
           );
@@ -443,7 +438,7 @@ class ViewEditForm extends ViewFormBase {
             '#type' => 'submit',
             '#value' => $this->t('Duplicate !display_title', array('!display_title' => $display_title)),
             '#limit_validation_errors' => array(),
-            '#submit' => array(array($this, 'submitDisplayDuplicate'), array($this, 'submitDelayDestination')),
+            '#submit' => array('::submitDisplayDuplicate', '::submitDelayDestination'),
             '#prefix' => '<li class="duplicate">',
             "#suffix" => '</li>',
           );
@@ -453,7 +448,7 @@ class ViewEditForm extends ViewFormBase {
           '#type' => 'submit',
           '#value' => $this->t('Delete !display_title', array('!display_title' => $display_title)),
           '#limit_validation_errors' => array(),
-          '#submit' => array(array($this, 'submitDisplayDelete'), array($this, 'submitDelayDestination')),
+          '#submit' => array('::submitDisplayDelete', '::submitDelayDestination'),
           '#prefix' => '<li class="delete">',
           "#suffix" => '</li>',
         );
@@ -467,7 +462,7 @@ class ViewEditForm extends ViewFormBase {
             '#type' => 'submit',
             '#value' => $this->t('Duplicate as !type', array('!type' => $label)),
             '#limit_validation_errors' => array(),
-            '#submit' => array(array($this, 'submitDuplicateDisplayAsType'), array($this, 'submitDelayDestination')),
+            '#submit' => array('::submitDuplicateDisplayAsType', '::submitDelayDestination'),
             '#prefix' => '<li class="duplicate">',
             '#suffix' => '</li>',
           );
@@ -478,7 +473,7 @@ class ViewEditForm extends ViewFormBase {
           '#type' => 'submit',
           '#value' => $this->t('Undo delete of !display_title', array('!display_title' => $display_title)),
           '#limit_validation_errors' => array(),
-          '#submit' => array(array($this, 'submitDisplayUndoDelete'), array($this, 'submitDelayDestination')),
+          '#submit' => array('::submitDisplayUndoDelete', '::submitDelayDestination'),
           '#prefix' => '<li class="undo-delete">',
           "#suffix" => '</li>',
         );
@@ -488,7 +483,7 @@ class ViewEditForm extends ViewFormBase {
           '#type' => 'submit',
           '#value' => $this->t('Disable !display_title', array('!display_title' => $display_title)),
           '#limit_validation_errors' => array(),
-          '#submit' => array(array($this, 'submitDisplayDisable'), array($this, 'submitDelayDestination')),
+          '#submit' => array('::submitDisplayDisable', '::submitDelayDestination'),
           '#prefix' => '<li class="disable">',
           "#suffix" => '</li>',
         );
@@ -585,7 +580,7 @@ class ViewEditForm extends ViewFormBase {
   public function submitDisplayUndoDelete($form, FormStateInterface $form_state) {
     $view = $this->entity;
     // Create the new display
-    $id = $form_state['display_id'];
+    $id = $form_state->get('display_id');
     $displays = $view->get('display');
     $displays[$id]['deleted'] = FALSE;
     $view->set('display', $displays);
@@ -594,7 +589,7 @@ class ViewEditForm extends ViewFormBase {
     $view->cacheSet();
 
     // Redirect to the top-level edit page.
-    $form_state->setRedirect('views_ui.edit_display', array(
+    $form_state->setRedirect('entity.view.edit_display_form', array(
       'view' => $view->id(),
       'display_id' => $id,
     ));
@@ -605,7 +600,7 @@ class ViewEditForm extends ViewFormBase {
    */
   public function submitDisplayEnable($form, FormStateInterface $form_state) {
     $view = $this->entity;
-    $id = $form_state['display_id'];
+    $id = $form_state->get('display_id');
     // setOption doesn't work because this would might affect upper displays
     $view->getExecutable()->displayHandlers->get($id)->setOption('enabled', TRUE);
 
@@ -613,7 +608,7 @@ class ViewEditForm extends ViewFormBase {
     $view->cacheSet();
 
     // Redirect to the top-level edit page.
-    $form_state->setRedirect('views_ui.edit_display', array(
+    $form_state->setRedirect('entity.view.edit_display_form', array(
       'view' => $view->id(),
       'display_id' => $id,
     ));
@@ -624,14 +619,14 @@ class ViewEditForm extends ViewFormBase {
    */
   public function submitDisplayDisable($form, FormStateInterface $form_state) {
     $view = $this->entity;
-    $id = $form_state['display_id'];
+    $id = $form_state->get('display_id');
     $view->getExecutable()->displayHandlers->get($id)->setOption('enabled', FALSE);
 
     // Store in cache
     $view->cacheSet();
 
     // Redirect to the top-level edit page.
-    $form_state->setRedirect('views_ui.edit_display', array(
+    $form_state->setRedirect('entity.view.edit_display_form', array(
       'view' => $view->id(),
       'display_id' => $id,
     ));
@@ -642,7 +637,7 @@ class ViewEditForm extends ViewFormBase {
    */
   public function submitDisplayDelete($form, FormStateInterface $form_state) {
     $view = $this->entity;
-    $display_id = $form_state['display_id'];
+    $display_id = $form_state->get('display_id');
 
     // Mark the display for deletion.
     $displays = $view->get('display');
@@ -710,7 +705,7 @@ class ViewEditForm extends ViewFormBase {
         ),
         'duplicate' => array(
           'title' => $this->t('Duplicate view'),
-        ) + $view->urlInfo('duplicate')->toArray(),
+        ) + $view->urlInfo('duplicate-form')->toArray(),
         'reorder' => array(
           'title' => $this->t('Reorder displays'),
           'href' => "admin/structure/views/nojs/reorder-displays/{$view->id()}/$display_id",
@@ -760,7 +755,7 @@ class ViewEditForm extends ViewFormBase {
         '#type' => 'submit',
         '#value' => $this->t('Add !display', array('!display' => $label)),
         '#limit_validation_errors' => array(),
-        '#submit' => array(array($this, 'submitDisplayAdd'), array($this, 'submitDelayDestination')),
+        '#submit' => array('::submitDisplayAdd', '::submitDelayDestination'),
         '#attributes' => array('class' => array('add-display')),
         // Allow JavaScript to remove the 'Add ' prefix from the button label when
         // placing the button in a "Add" dropdown menu.
@@ -776,7 +771,7 @@ class ViewEditForm extends ViewFormBase {
    * Submit handler for form buttons that do not complete a form workflow.
    *
    * The Edit View form is a multistep form workflow, but with state managed by
-   * the TempStore rather than $form_state['rebuild']. Without this
+   * the TempStore rather than $form_state->setRebuild(). Without this
    * submit handler, buttons that add or remove displays would redirect to the
    * destination parameter (e.g., when the Edit View form is linked to from a
    * contextual link). This handler can be added to buttons whose form submission
@@ -829,7 +824,7 @@ class ViewEditForm extends ViewFormBase {
     $view->cacheSet();
 
     // Redirect to the new display's edit page.
-    $form_state->setRedirect('views_ui.edit_display', array(
+    $form_state->setRedirect('entity.view.edit_display_form', array(
       'view' => $view->id(),
       'display_id' => $new_display_id,
     ));
@@ -841,7 +836,7 @@ class ViewEditForm extends ViewFormBase {
   public function submitDisplayAdd($form, FormStateInterface $form_state) {
     $view = $this->entity;
     // Create the new display.
-    $parents = $form_state['triggering_element']['#parents'];
+    $parents = $form_state->getTriggeringElement()['#parents'];
     $display_type = array_pop($parents);
     $display = $view->getExecutable()->newDisplay($display_type);
     $display_id = $display->display['id'];
@@ -851,7 +846,7 @@ class ViewEditForm extends ViewFormBase {
     $view->cacheSet();
 
     // Redirect to the new display's edit page.
-    $form_state->setRedirect('views_ui.edit_display', array(
+    $form_state->setRedirect('entity.view.edit_display_form', array(
       'view' => $view->id(),
       'display_id' => $display_id,
     ));
@@ -865,7 +860,7 @@ class ViewEditForm extends ViewFormBase {
     $display_id = $this->displayID;
 
     // Create the new display.
-    $parents = $form_state['triggering_element']['#parents'];
+    $parents = $form_state->getTriggeringElement()['#parents'];
     $display_type = array_pop($parents);
     $display = $view->getExecutable()->newDisplay($display_type);
     $new_display_id = $display->display['id'];
@@ -887,7 +882,7 @@ class ViewEditForm extends ViewFormBase {
     $view->cacheSet();
 
     // Redirect to the new display's edit page.
-    $form_state->setRedirect('views_ui.edit_display', array(
+    $form_state->setRedirect('entity.view.edit_display_form', array(
       'view' => $view->id(),
       'display_id' => $new_display_id,
     ));
@@ -1066,7 +1061,13 @@ class ViewEditForm extends ViewFormBase {
       if ($handler->broken()) {
         $build['fields'][$id]['#class'][] = 'broken';
         $field_name = $handler->adminLabel();
-        $build['fields'][$id]['#link'] = l($field_name, "admin/structure/views/nojs/handler/{$view->id()}/{$display['id']}/$type/$id", array('attributes' => array('class' => array('views-ajax-link')), 'html' => TRUE));
+        $build['fields'][$id]['#link'] = $this->l($field_name, new Url('views_ui.form_handler', array(
+          'js' => 'nojs',
+          'view' => $view->id(),
+          'display_id' => $display['id'],
+          'type' => $type,
+          'id' => $id,
+        ), array('attributes' => array('class' => array('views-ajax-link')), 'html' => TRUE)));
         continue;
       }
 
@@ -1083,15 +1084,33 @@ class ViewEditForm extends ViewFormBase {
         // Add a [hidden] marker, if the field is excluded.
         $link_text .= ' [' . $this->t('hidden') . ']';
       }
-      $build['fields'][$id]['#link'] = l($link_text, "admin/structure/views/nojs/handler/{$view->id()}/{$display['id']}/$type/$id", array('attributes' => $link_attributes, 'html' => TRUE));
+      $build['fields'][$id]['#link'] = $this->l($link_text, new Url('views_ui.form_handler', array(
+        'js' => 'nojs',
+        'view' => $view->id(),
+        'display_id' => $display['id'],
+        'type' => $type,
+        'id' => $id,
+      ), array('attributes' => $link_attributes, 'html' => TRUE)));
       $build['fields'][$id]['#class'][] = drupal_clean_css_identifier($display['id']. '-' . $type . '-' . $id);
 
       if ($executable->display_handler->useGroupBy() && $handler->usesGroupBy()) {
-        $build['fields'][$id]['#settings_links'][] = l('<span class="label">' . $this->t('Aggregation settings') . '</span>', "admin/structure/views/nojs/handler-group/{$view->id()}/{$display['id']}/$type/$id", array('attributes' => array('class' => array('views-button-configure', 'views-ajax-link'), 'title' => $this->t('Aggregation settings')), 'html' => TRUE));
+        $build['fields'][$id]['#settings_links'][] = $this->l('<span class="label">' . $this->t('Aggregation settings') . '</span>', new Url('views_ui.form_handler_group', array(
+          'js' => 'nojs',
+          'view' => $view->id(),
+          'display_id' => $display['id'],
+          'type' => $type,
+          'id' => $id,
+        ), array('attributes' => array('class' => array('views-button-configure', 'views-ajax-link'), 'title' => $this->t('Aggregation settings')), 'html' => TRUE)));
       }
 
       if ($handler->hasExtraOptions()) {
-        $build['fields'][$id]['#settings_links'][] = l('<span class="label">' . $this->t('Settings') . '</span>', "admin/structure/views/nojs/handler-extra/{$view->id()}/{$display['id']}/$type/$id", array('attributes' => array('class' => array('views-button-configure', 'views-ajax-link'), 'title' => $this->t('Settings')), 'html' => TRUE));
+        $build['fields'][$id]['#settings_links'][] = $this->l('<span class="label">' . $this->t('Settings') . '</span>', new Url('views_ui.form_handler_extra', array(
+          'js' => 'nojs',
+          'view' => $view->id(),
+          'display_id' => $display['id'],
+          'type' => $type,
+          'id' => $id,
+        ), array('attributes' => array('class' => array('views-button-configure', 'views-ajax-link'), 'title' => $this->t('Settings')), 'html' => TRUE)));
       }
 
       if ($grouping) {

@@ -13,6 +13,7 @@ use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Url;
 use Drupal\language\ConfigurableLanguageManagerInterface;
 use Drupal\user\Plugin\LanguageNegotiation\LanguageNegotiationUserAdmin;
 use Drupal\user\Plugin\LanguageNegotiation\LanguageNegotiationUser;
@@ -132,7 +133,7 @@ abstract class AccountForm extends ContentEntityForm {
       if (!$pass_reset) {
         $protected_values['mail'] = $form['account']['mail']['#title'];
         $protected_values['pass'] = $this->t('Password');
-        $request_new = l($this->t('Request new password'), 'user/password', array('attributes' => array('title' => $this->t('Request new password via email.'))));
+        $request_new = $this->l($this->t('Request new password'), new Url('user.pass', array(), array('attributes' => array('title' => $this->t('Request new password via email.')))));
         $current_pass_description = $this->t('Required if you want to change the %mail or %pass below. !request_new.', array('%mail' => $protected_values['mail'], '%pass' => $protected_values['pass'], '!request_new' => $request_new));
       }
 
@@ -156,7 +157,7 @@ abstract class AccountForm extends ContentEntityForm {
           '#attributes' => array('autocomplete' => 'off'),
         );
 
-        $form_state['user'] = $account;
+        $form_state->set('user', $account);
         $form['#validate'][] = 'user_validate_current_pass';
       }
     }
@@ -361,7 +362,7 @@ abstract class AccountForm extends ContentEntityForm {
           $form_state->setErrorByName('mail', $this->t('The email address %email is already taken.', array('%email' => $mail)));
         }
         else {
-          $form_state->setErrorByName('mail', $this->t('The email address %email is already registered. <a href="@password">Have you forgotten your password?</a>', array('%email' => $mail, '@password' => url('user/password'))));
+          $form_state->setErrorByName('mail', $this->t('The email address %email is already registered. <a href="@password">Have you forgotten your password?</a>', array('%email' => $mail, '@password' => $this->url('user.pass'))));
         }
       }
     }
@@ -387,8 +388,8 @@ abstract class AccountForm extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
-  public function submit(array $form, FormStateInterface $form_state) {
-    parent::submit($form, $form_state);
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    parent::submitForm($form, $form_state);
 
     $user = $this->getEntity($form_state);
     // If there's a session set to the users id, remove the password reset tag

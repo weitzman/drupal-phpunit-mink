@@ -17,17 +17,17 @@ use Drupal\entity_test\Entity\EntityTest;
  * @ContentEntityType(
  *   id = "entity_test_rev",
  *   label = @Translation("Test entity - revisions"),
- *   controllers = {
+ *   handlers = {
  *     "access" = "Drupal\entity_test\EntityTestAccessControlHandler",
  *     "form" = {
  *       "default" = "Drupal\entity_test\EntityTestForm",
  *       "delete" = "Drupal\entity_test\EntityTestDeleteForm"
  *     },
- *     "translation" = "Drupal\content_translation\ContentTranslationHandler"
+ *     "translation" = "Drupal\content_translation\ContentTranslationHandler",
+ *     "views_data" = "Drupal\views\EntityViewsData"
  *   },
  *   base_table = "entity_test_rev",
  *   revision_table = "entity_test_rev_revision",
- *   fieldable = TRUE,
  *   entity_keys = {
  *     "id" = "id",
  *     "uuid" = "uuid",
@@ -36,9 +36,9 @@ use Drupal\entity_test\Entity\EntityTest;
  *     "label" = "name",
  *   },
  *   links = {
- *     "canonical" = "entity_test.edit_entity_test_rev",
- *     "delete-form" = "entity_test.delete_entity_test_rev",
- *     "edit-form" = "entity_test.edit_entity_test_rev"
+ *     "canonical" = "entity.entity_test_rev.edit_form",
+ *     "delete-form" = "entity.entity_test_rev.delete_form",
+ *     "edit-form" = "entity.entity_test_rev.edit_form"
  *   }
  * )
  */

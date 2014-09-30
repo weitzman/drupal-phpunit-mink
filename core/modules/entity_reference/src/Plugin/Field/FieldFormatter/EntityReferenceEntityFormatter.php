@@ -48,12 +48,6 @@ class EntityReferenceEntityFormatter extends EntityReferenceFormatterBase {
       '#required' => TRUE,
     );
 
-    $elements['links'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Show links'),
-      '#default_value' => $this->getSetting('links'),
-    );
-
     return $elements;
   }
 
@@ -66,7 +60,6 @@ class EntityReferenceEntityFormatter extends EntityReferenceFormatterBase {
     $view_modes = \Drupal::entityManager()->getViewModeOptions($this->getFieldSetting('target_type'));
     $view_mode = $this->getSetting('view_mode');
     $summary[] = t('Rendered as @mode', array('@mode' => isset($view_modes[$view_mode]) ? $view_modes[$view_mode] : $view_mode));
-    $summary[] = $this->getSetting('links') ? t('Display links') : t('Do not display links');
 
     return $summary;
   }
@@ -76,9 +69,6 @@ class EntityReferenceEntityFormatter extends EntityReferenceFormatterBase {
    */
   public function viewElements(FieldItemListInterface $items) {
     $view_mode = $this->getSetting('view_mode');
-    $links = $this->getSetting('links');
-
-    $target_type = $this->getFieldSetting('target_type');
 
     $elements = array();
 
@@ -95,28 +85,8 @@ class EntityReferenceEntityFormatter extends EntityReferenceFormatterBase {
       }
 
       if (!empty($item->target_id)) {
-        // The viewElements() method of entity field formatters is run
-        // during the #pre_render phase of rendering an entity. A formatter
-        // builds the content of the field in preparation for theming.
-        // All entity cache tags must be available after the #pre_render phase.
-        // This field formatter is highly exceptional: it renders *another*
-        // entity and this referenced entity has its own #pre_render
-        // callbacks. In order collect the cache tags associated with the
-        // referenced entity it must be passed to drupal_render() so that its
-        // #pre_render callbacks are invoked and its full build array is
-        // assembled. Rendering the referenced entity in place here will allow
-        // its cache tags to be bubbled up and included with those of the
-        // main entity when cache tags are collected for a renderable array
-        // in drupal_render().
-        // @todo remove this work-around, see https://drupal.org/node/2273277
-        $referenced_entity_build = entity_view($item->entity, $view_mode, $item->getLangcode());
-        drupal_render($referenced_entity_build, TRUE);
-        $elements[$delta] = $referenced_entity_build;
+        $elements[$delta] = entity_view($item->entity, $view_mode, $item->getLangcode());
 
-        if (empty($links) && isset($result[$delta][$target_type][$item->target_id]['links'])) {
-          // Hide the element links.
-          $elements[$delta][$target_type][$item->target_id]['links']['#access'] = FALSE;
-        }
         // Add a resource attribute to set the mapping property's value to the
         // entity's url. Since we don't know what the markup of the entity will
         // be, we shouldn't rely on it for structured data such as RDFa.

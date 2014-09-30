@@ -51,7 +51,7 @@ class FormTestValidateForm extends FormBase {
 
     // To simplify this test, enable form caching and use form storage to
     // remember our alteration.
-    $form_state['cache'] = TRUE;
+    $form_state->setCached();
 
     return $form;
   }
@@ -69,7 +69,7 @@ class FormTestValidateForm extends FormBase {
       drupal_set_message(t('@label value: @value', array('@label' => $form['name']['#title'], '@value' => $form_state->getValue('name'))));
 
       // Trigger a form validation error to see our changes.
-      form_set_error('', $form_state);
+      $form_state->setErrorByName('');
     }
   }
 

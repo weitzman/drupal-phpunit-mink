@@ -32,21 +32,18 @@ class MultiStepNodeFormBasicOptionsTest extends NodeTestBase {
     // Create an unlimited cardinality field.
     $this->field_name = drupal_strtolower($this->randomMachineName());
     entity_create('field_storage_config', array(
-      'name' => $this->field_name,
+      'field_name' => $this->field_name,
       'entity_type' => 'node',
       'type' => 'text',
       'cardinality' => -1,
     ))->save();
 
     // Attach an instance of the field to the page content type.
-    entity_create('field_instance_config', array(
+    entity_create('field_config', array(
       'field_name' => $this->field_name,
       'entity_type' => 'node',
       'bundle' => 'page',
       'label' => $this->randomMachineName() . '_label',
-      'settings' => array(
-        'text_processing' => TRUE,
-      ),
     ))->save();
     entity_get_form_display('node', 'page', 'default')
       ->setComponent($this->field_name, array(
@@ -56,13 +53,13 @@ class MultiStepNodeFormBasicOptionsTest extends NodeTestBase {
 
     $edit = array(
       'title[0][value]' => 'a',
-      'promote' => FALSE,
-      'sticky' => 1,
+      'promote[value]' => FALSE,
+      'sticky[value]' => 1,
       "{$this->field_name}[0][value]" => $this->randomString(32),
     );
     $this->drupalPostForm('node/add/page', $edit, t('Add another item'));
-    $this->assertNoFieldChecked('edit-promote', 'promote stayed unchecked');
-    $this->assertFieldChecked('edit-sticky', 'sticky stayed checked');
+    $this->assertNoFieldChecked('edit-promote-value', 'Promote stayed unchecked');
+    $this->assertFieldChecked('edit-sticky-value', 'Sticky stayed checked');
   }
 
 }

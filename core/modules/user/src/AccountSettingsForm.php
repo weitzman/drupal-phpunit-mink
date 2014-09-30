@@ -106,7 +106,7 @@ class AccountSettingsForm extends ConfigFormBase {
         '#open' => TRUE,
         '#tree' => TRUE,
       );
-      $form_state['content_translation']['key'] = 'language';
+      $form_state->set(['content_translation', 'key'], 'language');
       $form['language'] += content_translation_enable_widget('user', 'user', $form, $form_state);
     }
 
@@ -128,7 +128,7 @@ class AccountSettingsForm extends ConfigFormBase {
     );
     $form['registration_cancellation']['user_email_verification'] = array(
       '#type' => 'checkbox',
-      '#title' => $this->t('Require email verification when a visitor creates an account.'),
+      '#title' => $this->t('Require email verification when a visitor creates an account'),
       '#default_value' => $config->get('verify_mail'),
       '#description' => $this->t('New users will be required to validate their email address prior to logging into the site, and will be assigned a system-generated password. With this setting disabled, users will be logged in immediately upon registering, and may select their own passwords during registration.')
     );
@@ -141,7 +141,7 @@ class AccountSettingsForm extends ConfigFormBase {
       '#type' => 'radios',
       '#title' => $this->t('When cancelling a user account'),
       '#default_value' => $config->get('cancel_method'),
-      '#description' => $this->t('Users with the %select-cancel-method or %administer-users <a href="@permissions-url">permissions</a> can override this default method.', array('%select-cancel-method' => $this->t('Select method for cancelling account'), '%administer-users' => $this->t('Administer users'), '@permissions-url' => url('admin/people/permissions'))),
+      '#description' => $this->t('Users with the %select-cancel-method or %administer-users <a href="@permissions-url">permissions</a> can override this default method.', array('%select-cancel-method' => $this->t('Select method for cancelling account'), '%administer-users' => $this->t('Administer users'), '@permissions-url' => $this->url('user.admin_permissions'))),
     );
     $form['registration_cancellation']['user_cancel_method'] += user_cancel_methods();
     foreach (Element::children($form['registration_cancellation']['user_cancel_method']) as $key) {
@@ -163,7 +163,7 @@ class AccountSettingsForm extends ConfigFormBase {
     );
     $form['personalization']['user_signatures'] = array(
       '#type' => 'checkbox',
-      '#title' => $this->t('Enable signatures.'),
+      '#title' => $this->t('Enable signatures'),
       '#default_value' => $filter_exists ? $config->get('signatures') : 0,
       '#access' => $filter_exists,
     );
@@ -293,7 +293,7 @@ class AccountSettingsForm extends ConfigFormBase {
     );
     $form['email_activated']['user_mail_status_activated_notify'] = array(
       '#type' => 'checkbox',
-      '#title' => $this->t('Notify user when account is activated.'),
+      '#title' => $this->t('Notify user when account is activated'),
       '#default_value' => $config->get('notify.status_activated'),
     );
     $form['email_activated']['settings'] = array(
@@ -326,7 +326,7 @@ class AccountSettingsForm extends ConfigFormBase {
     );
     $form['email_blocked']['user_mail_status_blocked_notify'] = array(
       '#type' => 'checkbox',
-      '#title' => $this->t('Notify user when account is blocked.'),
+      '#title' => $this->t('Notify user when account is blocked'),
       '#default_value' => $config->get('notify.status_blocked'),
     );
     $form['email_blocked']['settings'] = array(
@@ -378,7 +378,7 @@ class AccountSettingsForm extends ConfigFormBase {
     );
     $form['email_canceled']['user_mail_status_canceled_notify'] = array(
       '#type' => 'checkbox',
-      '#title' => $this->t('Notify user when account is canceled.'),
+      '#title' => $this->t('Notify user when account is canceled'),
       '#default_value' => $config->get('notify.status_canceled'),
     );
     $form['email_canceled']['settings'] = array(
@@ -445,6 +445,9 @@ class AccountSettingsForm extends ConfigFormBase {
     $this->config('system.site')
       ->set('mail_notification', $form_state->getValue('mail_notification_address'))
       ->save();
+
+    // Clear field definition cache for signatures.
+    \Drupal::entityManager()->clearCachedFieldDefinitions();
   }
 
 }

@@ -52,8 +52,18 @@ class UserAdminTest extends WebTestBase {
     $this->assertText($admin_user->getUsername(), 'Found Admin user on admin users page');
 
     // Test for existence of edit link in table.
-    $link = l(t('Edit'), "user/" . $user_a->id() . "/edit", array('query' => array('destination' => 'admin/people')));
+    // @todo This cannot be converted to \Drupal::l() until
+    //   https://www.drupal.org/node/2345725 is resolved.
+    $link = _l(t('Edit'), "user/" . $user_a->id() . "/edit", array('query' => array('destination' => 'admin/people')));
     $this->assertRaw($link, 'Found user A edit link on admin users page');
+
+    // Test exposed filter elements.
+    foreach (array('user', 'role', 'permission', 'status') as $field) {
+      $this->assertField("edit-$field", "$field exposed filter found.");
+    }
+    // Make sure the reduce duplicates element from the ManyToOneHelper is not
+    // displayed.
+    $this->assertNoField('edit-reduce-duplicates', 'Reduce duplicates form element not found in exposed filters.');
 
     // Filter the users by name/email.
     $this->drupalGet('admin/people', array('query' => array('user' => $user_a->getUsername())));

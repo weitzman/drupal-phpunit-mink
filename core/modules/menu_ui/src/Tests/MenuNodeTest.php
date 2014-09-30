@@ -8,6 +8,7 @@
 namespace Drupal\menu_ui\Tests;
 
 use Drupal\simpletest\WebTestBase;
+use Drupal\menu_link_content\Entity\MenuLinkContent;
 
 /**
  * Add, edit, and delete a node with menu link.
@@ -21,10 +22,13 @@ class MenuNodeTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('menu_ui', 'test_page_test', 'node');
+  public static $modules = array('menu_ui', 'test_page_test', 'node', 'block');
 
-  function setUp() {
+  protected function setUp() {
     parent::setUp();
+
+    $this->drupalPlaceBlock('system_menu_block:main');
+
     $this->drupalCreateContentType(array('type' => 'page', 'name' => 'Basic page'));
 
     $this->admin_user = $this->drupalCreateUser(array(
@@ -140,7 +144,7 @@ class MenuNodeTest extends WebTestBase {
     $this->assertText('Provide a menu link', 'Link in not allowed menu not shown in node edit form');
     // Assert that the link is still in the Administration menu after save.
     $this->drupalPostForm('node/' . $node->id() . '/edit', $edit, t('Save'));
-    $link = entity_load('menu_link_content', $item->id());
+    $link = MenuLinkContent::load($item->id());
     $this->assertTrue($link, 'Link in not allowed menu still exists after saving node');
 
     // Move the menu link back to the Tools menu.

@@ -33,7 +33,7 @@ class UserAccountFormFieldsTest extends DrupalUnitTestBase {
     require_once DRUPAL_ROOT . '/core/includes/install.inc';
     $install_state = install_state_defaults();
     $form_state = new FormState();
-    $form_state['build_info']['args'][] = &$install_state;
+    $form_state->addBuildInfo('args', [&$install_state]);
     $form = $this->container->get('form_builder')
       ->buildForm('Drupal\Core\Installer\Form\SiteConfigureForm', $form_state);
 
@@ -78,6 +78,10 @@ class UserAccountFormFieldsTest extends DrupalUnitTestBase {
   function testUserEditForm() {
     // Install default configuration; required for AccountFormController.
     $this->installConfig(array('user'));
+
+    // Install the router table and then rebuild.
+    $this->installSchema('system', ['router']);
+    \Drupal::service('router.builder')->rebuild();
 
     $form = $this->buildAccountForm('default');
 

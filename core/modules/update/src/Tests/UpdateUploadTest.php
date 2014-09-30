@@ -21,7 +21,7 @@ class UpdateUploadTest extends UpdateTestBase {
    */
   public static $modules = array('update', 'update_test');
 
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
     $admin_user = $this->drupalCreateUser(array('administer software updates', 'administer site configuration'));
     $this->drupalLogin($admin_user);
@@ -79,7 +79,7 @@ class UpdateUploadTest extends UpdateTestBase {
       ->set('system_info', $setting)
       ->set('xml_map', array('drupal' => '2-sec'))
       ->save();
-    \Drupal::config('update.settings')->set('fetch.url', url('update-test', array('absolute' => TRUE)))->save();
+    \Drupal::config('update.settings')->set('fetch.url', _url('update-test', array('absolute' => TRUE)))->save();
     // Initialize the update status.
     $this->drupalGet('admin/reports/updates');
 

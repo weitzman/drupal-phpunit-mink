@@ -23,10 +23,12 @@ use Drupal\user\UserInterface;
  *   id = "comment",
  *   label = @Translation("Comment"),
  *   bundle_label = @Translation("Content type"),
- *   controllers = {
+ *   handlers = {
  *     "storage" = "Drupal\comment\CommentStorage",
+ *     "storage_schema" = "Drupal\comment\CommentStorageSchema",
  *     "access" = "Drupal\comment\CommentAccessControlHandler",
  *     "view_builder" = "Drupal\comment\CommentViewBuilder",
+ *     "views_data" = "Drupal\comment\CommentViewsData",
  *     "form" = {
  *       "default" = "Drupal\comment\CommentForm",
  *       "delete" = "Drupal\comment\Form\DeleteForm"
@@ -36,7 +38,6 @@ use Drupal\user\UserInterface;
  *   base_table = "comment",
  *   data_table = "comment_field_data",
  *   uri_callback = "comment_uri",
- *   fieldable = TRUE,
  *   translatable = TRUE,
  *   entity_keys = {
  *     "id" = "cid",
@@ -48,9 +49,9 @@ use Drupal\user\UserInterface;
  *     "canonical" = "entity.comment.canonical",
  *     "delete-form" = "entity.comment.delete_form",
  *     "edit-form" = "entity.comment.edit_form",
- *     "admin-form" = "entity.comment_type.edit_form"
  *   },
- *   bundle_entity_type = "comment_type"
+ *   bundle_entity_type = "comment_type",
+ *   field_ui_base_route  = "entity.comment_type.edit_form",
  * )
  */
 class Comment extends ContentEntityBase implements CommentInterface {
@@ -228,7 +229,7 @@ class Comment extends ContentEntityBase implements CommentInterface {
       ->setTranslatable(TRUE)
       ->setSetting('max_length', 64)
       ->setDisplayOptions('form', array(
-        'type' => 'string',
+        'type' => 'string_textfield',
         // Default comment body field has weight 20.
         'weight' => 10,
       ))
@@ -323,8 +324,7 @@ class Comment extends ContentEntityBase implements CommentInterface {
    * {@inheritdoc}
    */
   public function hasParentComment() {
-    $parent = $this->get('pid')->entity;
-    return !empty($parent);
+    return (bool) $this->get('pid')->target_id;
   }
 
   /**

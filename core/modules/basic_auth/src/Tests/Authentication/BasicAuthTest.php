@@ -7,6 +7,7 @@
 
 namespace Drupal\basic_auth\Tests\Authentication;
 
+use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\simpletest\WebTestBase;
 
 /**
@@ -21,7 +22,7 @@ class BasicAuthTest extends WebTestBase {
    *
    * @var array
    */
-  public static $modules = array('basic_auth', 'router_test');
+  public static $modules = array('basic_auth', 'router_test', 'locale');
 
   /**
    * Test http basic authentication.
@@ -115,6 +116,21 @@ class BasicAuthTest extends WebTestBase {
   }
 
   /**
+   * Tests compatibility with locale/UI translation.
+   */
+  function testLocale() {
+    ConfigurableLanguage::createFromLangcode('de')->save();
+    \Drupal::config('system.site')->set('langcode', 'de')->save();
+
+    $account = $this->drupalCreateUser();
+
+    $this->basicAuthGet('router_test/test11', $account->getUsername(), $account->pass_raw);
+    $this->assertText($account->getUsername(), 'Account name is displayed.');
+    $this->assertResponse('200', 'HTTP response is OK');
+    $this->curlClose();
+  }
+
+  /**
    * Does HTTP basic auth request.
    *
    * We do not use \Drupal\simpletest\WebTestBase::drupalGet because we need to
@@ -134,7 +150,7 @@ class BasicAuthTest extends WebTestBase {
     $out = $this->curlExec(
       array(
         CURLOPT_HTTPGET => TRUE,
-        CURLOPT_URL => url($path, array('absolute' => TRUE)),
+        CURLOPT_URL => _url($path, array('absolute' => TRUE)),
         CURLOPT_NOBODY => FALSE,
         CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
         CURLOPT_USERPWD => $username . ':' . $password,

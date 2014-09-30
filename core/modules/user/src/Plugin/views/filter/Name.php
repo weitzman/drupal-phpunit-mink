@@ -40,14 +40,16 @@ class Name extends InOperator {
     $default_value = implode(', ', $values);
     $form['value'] = array(
       '#type' => 'textfield',
-      '#title' => t('Usernames'),
-      '#description' => t('Enter a comma separated list of user names.'),
+      '#title' => $this->t('Usernames'),
+      '#description' => $this->t('Enter a comma separated list of user names.'),
       '#default_value' => $default_value,
       '#autocomplete_route_name' => 'user.autocomplete_anonymous',
     );
 
-    if (!empty($form_state['exposed']) && !isset($form_state['input'][$this->options['expose']['identifier']])) {
-      $form_state['input'][$this->options['expose']['identifier']] = $default_value;
+    $user_input = $form_state->getUserInput();
+    if ($form_state->get('exposed') && !isset($user_input[$this->options['expose']['identifier']])) {
+      $user_input[$this->options['expose']['identifier']] = $default_value;
+      $form_state->setUserInput($user_input);
     }
   }
 
@@ -133,7 +135,7 @@ class Name extends InOperator {
     }
 
     if ($missing) {
-      form_error($form, $form_state, format_plural(count($missing), 'Unable to find user: @users', 'Unable to find users: @users', array('@users' => implode(', ', array_keys($missing)))));
+      $form_state->setError($form, format_plural(count($missing), 'Unable to find user: @users', 'Unable to find users: @users', array('@users' => implode(', ', array_keys($missing)))));
     }
 
     return $uids;

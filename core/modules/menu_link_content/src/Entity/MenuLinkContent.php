@@ -20,8 +20,8 @@ use Drupal\menu_link_content\MenuLinkContentInterface;
  * @ContentEntityType(
  *   id = "menu_link_content",
  *   label = @Translation("Custom menu link"),
- *   controllers = {
- *     "storage" = "Drupal\Core\Entity\ContentEntityDatabaseStorage",
+ *   handlers = {
+ *     "storage" = "Drupal\Core\Entity\Sql\SqlContentEntityStorage",
  *     "access" = "Drupal\menu_link_content\MenuLinkContentAccessControlHandler",
  *     "form" = {
  *       "default" = "Drupal\menu_link_content\Form\MenuLinkContentForm",
@@ -31,7 +31,6 @@ use Drupal\menu_link_content\MenuLinkContentInterface;
  *   admin_permission = "administer menu",
  *   base_table = "menu_link_content",
  *   data_table = "menu_link_content_data",
- *   fieldable = TRUE,
  *   translatable = TRUE,
  *   entity_keys = {
  *     "id" = "id",
@@ -108,7 +107,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
     else {
       $path = $this->getUrl();
       if (isset($path)) {
-        $url = Url::createFromPath($path);
+        $url = Url::fromUri($path);
       }
       else {
         $url = new Url('<front>');
@@ -180,6 +179,13 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
    */
   public function getWeight() {
     return (int) $this->get('weight')->value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getChangedTime() {
+    return $this->get('changed')->value;
   }
 
   /**
@@ -278,7 +284,6 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
       ->setRequired(TRUE)
       ->setTranslatable(TRUE)
       ->setSettings(array(
-        'default_value' => '',
         'max_length' => 255,
       ))
       ->setDisplayOptions('view', array(
@@ -287,7 +292,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
         'weight' => -5,
       ))
       ->setDisplayOptions('form', array(
-        'type' => 'string',
+        'type' => 'string_textfield',
         'weight' => -5,
       ))
       ->setDisplayConfigurable('form', TRUE);
@@ -297,7 +302,6 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
       ->setDescription(t('Shown when hovering over the menu link.'))
       ->setTranslatable(TRUE)
       ->setSettings(array(
-        'default_value' => '',
         'max_length' => 255,
       ))
       ->setDisplayOptions('view', array(
@@ -306,7 +310,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
         'weight' => 0,
       ))
       ->setDisplayOptions('form', array(
-        'type' => 'string',
+        'type' => 'string_textfield',
         'weight' => 0,
       ));
 
@@ -330,7 +334,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
 
     $fields['options'] = BaseFieldDefinition::create('map')
       ->setLabel(t('Options'))
-      ->setDescription(t('A serialized array of options to be passed to the url() or l() function, such as a query string or HTML attributes.'))
+      ->setDescription(t('A serialized array of options to be passed to the _url() or _l() function, such as a query string or HTML attributes.'))
       ->setSetting('default_value', array());
 
     $fields['external'] = BaseFieldDefinition::create('boolean')
@@ -341,7 +345,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
     $fields['weight'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Weight'))
       ->setDescription(t('Link weight among links in the same menu at the same depth. In the menu, the links with high weight will sink and links with a low weight will be positioned nearer the top.'))
-      ->setSetting('default_value', 0)
+      ->setDefaultValue(0)
       ->setDisplayOptions('view', array(
         'label' => 'hidden',
         'type' => 'integer',
@@ -355,7 +359,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
     $fields['expanded'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Show as expanded'))
       ->setDescription(t('If selected and this menu link has children, the menu will always appear expanded.'))
-      ->setSetting('default_value', FALSE)
+      ->setDefaultValue(FALSE)
       ->setDisplayOptions('view', array(
         'label' => 'hidden',
         'type' => 'boolean',
@@ -369,7 +373,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
     $fields['enabled'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Enabled'))
       ->setDescription(t('A flag for whether the link should be enabled in menus or hidden.'))
-      ->setSetting('default_value', TRUE)
+      ->setDefaultValue(TRUE)
       ->setDisplayOptions('view', array(
         'label' => 'hidden',
         'type' => 'boolean',
@@ -387,6 +391,10 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
     $fields['parent'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Parent plugin ID'))
       ->setDescription(t('The ID of the parent menu link plugin, or empty string when at the top level of the hierarchy.'));
+
+    $fields['changed'] = BaseFieldDefinition::create('changed')
+      ->setLabel(t('Changed'))
+      ->setDescription(t('The time that the menu link was last edited.'));
 
     return $fields;
   }

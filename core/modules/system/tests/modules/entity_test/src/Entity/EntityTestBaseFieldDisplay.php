@@ -16,7 +16,7 @@ use Drupal\Core\Field\BaseFieldDefinition;
  * @ContentEntityType(
  *   id = "entity_test_base_field_display",
  *   label = @Translation("Test entity - base field display"),
- *   controllers = {
+ *   handlers = {
  *     "access" = "Drupal\entity_test\EntityTestAccessControlHandler",
  *     "form" = {
  *       "default" = "Drupal\entity_test\EntityTestForm"
@@ -24,16 +24,15 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *     "translation" = "Drupal\content_translation\ContentTranslationHandler"
  *   },
  *   base_table = "entity_test",
- *   fieldable = TRUE,
  *   entity_keys = {
  *     "id" = "id",
  *     "uuid" = "uuid",
  *     "bundle" = "type"
  *   },
  *   links = {
- *     "edit-form" = "entity_test.edit_entity_test",
- *     "admin-form" = "entity_test.admin_entity_test"
- *   }
+ *     "edit-form" = "entity.entity_test_base_field_display.edit_form",
+ *   },
+ *   field_ui_base_route = "entity.entity_test_base_field_display.admin_form",
  * )
  */
 class EntityTestBaseFieldDisplay extends EntityTest {

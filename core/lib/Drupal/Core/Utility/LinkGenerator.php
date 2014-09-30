@@ -11,6 +11,7 @@ use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Link;
 use Drupal\Core\Path\AliasManagerInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Core\Template\Attribute;
@@ -50,6 +51,13 @@ class LinkGenerator implements LinkGeneratorInterface {
 
   /**
    * {@inheritdoc}
+   */
+  public function generateFromLink(Link $link) {
+    return $this->generate($link->getText(), $link->getUrl());
+  }
+
+  /**
+   * {@inheritdoc}
    *
    * For anonymous users, the "active" class will be calculated on the server,
    * because most sites serve each anonymous user the same cached page anyway.
@@ -60,7 +68,11 @@ class LinkGenerator implements LinkGeneratorInterface {
    *
    * @see system_page_build()
    */
-  public function generateFromUrl($text, Url $url) {
+  public function generate($text, Url $url) {
+    // Performance: avoid Url::toString() needing to retrieve the URL generator
+    // service from the container.
+    $url->setUrlGenerator($this->urlGenerator);
+
     // Start building a structured representation of our link to be altered later.
     $variables = array(
       // @todo Inject the service when drupal_render() is converted to one.
@@ -126,15 +138,6 @@ class LinkGenerator implements LinkGeneratorInterface {
     // Sanitize the link text if necessary.
     $text = $variables['options']['html'] ? $variables['text'] : String::checkPlain($variables['text']);
     return SafeMarkup::set('<a href="' . $url . '"' . $attributes . '>' . $text . '</a>');
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function generate($text, $route_name, array $parameters = array(), array $options = array()) {
-    $url = new Url($route_name, $parameters, $options);
-    $url->setUrlGenerator($this->urlGenerator);
-    return $this->generateFromUrl($text, $url);
   }
 
 }

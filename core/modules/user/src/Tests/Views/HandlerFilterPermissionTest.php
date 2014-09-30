@@ -79,10 +79,16 @@ class HandlerFilterPermissionTest extends UserUnitTestBase {
 
     // Test the value options.
     $value_options = $view->filter['permission']->getValueOptions();
+
+    $permission_by_module = [];
+    $permissions = \Drupal::service('user.permissions')->getPermissions();
+    foreach ($permissions as $name => $permission) {
+      $permission_by_module[$permission['provider']][$name] = $permission;
+    }
     foreach (array('system' => 'System', 'user' => 'User') as $module => $title) {
       $expected = array_map(function ($permission) {
         return String::checkPlain(strip_tags($permission['title']));
-      }, $this->container->get('module_handler')->invoke($module, 'permission'));
+      }, $permission_by_module[$module]);
 
       $this->assertEqual($expected, $value_options[$title], 'Ensure the all permissions are available');
     }

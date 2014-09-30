@@ -52,7 +52,7 @@ class SetCustomize extends EntityForm {
     foreach ($this->entity->getShortcuts() as $shortcut) {
       $id = $shortcut->id();
       $form['shortcuts']['links'][$id]['#attributes']['class'][] = 'draggable';
-      $form['shortcuts']['links'][$id]['name']['#markup'] = l($shortcut->getTitle(), $shortcut->path->value);
+      $form['shortcuts']['links'][$id]['name']['#markup'] = $this->l($shortcut->getTitle(), $shortcut->getUrl());
       $form['shortcuts']['links'][$id]['#weight'] = $shortcut->getWeight();
       $form['shortcuts']['links'][$id]['weight'] = array(
         '#type' => 'weight',
@@ -87,12 +87,10 @@ class SetCustomize extends EntityForm {
     // Only includes a Save action for the entity, no direct Delete button.
     return array(
       'submit' => array(
+        '#type' => 'submit',
         '#value' => t('Save changes'),
         '#access' => (bool) Element::getVisibleChildren($form['shortcuts']['links']),
-        '#submit' => array(
-          array($this, 'submit'),
-          array($this, 'save'),
-        ),
+        '#submit' => array('::submitForm', '::save'),
       ),
     );
   }

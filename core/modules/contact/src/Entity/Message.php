@@ -18,7 +18,7 @@ use Drupal\Core\Field\BaseFieldDefinition;
  * @ContentEntityType(
  *   id = "contact_message",
  *   label = @Translation("Contact message"),
- *   controllers = {
+ *   handlers = {
  *     "storage" = "Drupal\Core\Entity\ContentEntityNullStorage",
  *     "view_builder" = "Drupal\contact\MessageViewBuilder",
  *     "form" = {
@@ -26,14 +26,11 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *     }
  *   },
  *   entity_keys = {
- *     "bundle" = "category",
+ *     "bundle" = "contact_form",
  *     "uuid" = "uuid"
  *   },
- *   bundle_entity_type = "contact_category",
- *   fieldable = TRUE,
- *   links = {
- *     "admin-form" = "entity.contact_category.edit_form"
- *   }
+ *   bundle_entity_type = "contact_form",
+ *   field_ui_base_route = "entity.contact_form.edit_form",
  * )
  */
 class Message extends ContentEntityBase implements MessageInterface {
@@ -48,8 +45,8 @@ class Message extends ContentEntityBase implements MessageInterface {
   /**
    * {@inheritdoc}
    */
-  public function getCategory() {
-    return $this->get('category')->entity;
+  public function getContactForm() {
+    return $this->get('contact_form')->entity;
   }
 
   /**
@@ -135,10 +132,10 @@ class Message extends ContentEntityBase implements MessageInterface {
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
-    $fields['category'] = BaseFieldDefinition::create('entity_reference')
-      ->setLabel(t('Category ID'))
-      ->setDescription(t('The ID of the associated category.'))
-      ->setSetting('target_type', 'contact_category')
+    $fields['contact_form'] = BaseFieldDefinition::create('entity_reference')
+      ->setLabel(t('Form ID'))
+      ->setDescription(t('The ID of the associated form.'))
+      ->setSetting('target_type', 'contact_form')
       ->setRequired(TRUE);
 
     $fields['uuid'] = BaseFieldDefinition::create('uuid')
@@ -164,7 +161,7 @@ class Message extends ContentEntityBase implements MessageInterface {
       ->setRequired(TRUE)
       ->setSetting('max_length', 100)
       ->setDisplayOptions('form', array(
-        'type' => 'string',
+        'type' => 'string_textfield',
         'weight' => -10,
       ))
       ->setDisplayConfigurable('form', TRUE);

@@ -18,6 +18,19 @@
  * @link theme_render Theme system and Render API topic @endlink for more
  * information about render arrays and rendering.
  *
+ * @section sec_twig_theme Twig Templating Engine
+ * Drupal 8 utilizes the templating engine Twig. Twig offers developers a fast,
+ * secure, and flexible method for building templates for Drupal 8 sites. Twig
+ * also offers substantial usability improvements over PHPTemplate, and does
+ * not require front-end developers to know PHP to build and manipulate Drupal
+ * 8 themes.
+ *
+ * For further information on theming in Drupal 8 see
+ * https://www.drupal.org/theme-guide/8
+ *
+ * For further Twig documentation see
+ * http://twig.sensiolabs.org/doc/templates.html
+ *
  * @section sec_theme_hooks Theme Hooks
  * The theme system is invoked in drupal_render() by calling the internal
  * _theme() function, which operates on the concept of "theme hooks". Theme
@@ -455,28 +468,30 @@ function hook_theme_suggestions_HOOK_alter(array &$suggestions, array $variables
 }
 
 /**
- * Respond to themes being enabled.
+ * Respond to themes being installed.
  *
  * @param array $theme_list
- *   Array containing the names of the themes being enabled.
+ *   Array containing the names of the themes being installed.
  *
- * @see theme_enable()
+ * @see \Drupal\Core\Extension\ThemeHandler::install()
  */
-function hook_themes_enabled($theme_list) {
+function hook_themes_installed($theme_list) {
   foreach ($theme_list as $theme) {
     block_theme_initialize($theme);
   }
 }
 
 /**
- * Respond to themes being disabled.
+ * Respond to themes being uninstalled.
  *
  * @param array $theme_list
- *   Array containing the names of the themes being disabled.
+ *   Array containing the names of the themes being uninstalled.
  *
- * @see theme_disable()
+ * @see \Drupal\Core\Extension\ThemeHandler::uninstall()
  */
-function hook_themes_disabled($theme_list) {
- // Clear all update module caches.
-  update_storage_clear();
+function hook_themes_uninstalled(array $themes) {
+  // Remove some state entries depending on the theme.
+  foreach ($themes as $theme) {
+    \Drupal::state()->delete('example.' . $theme);
+  }
 }

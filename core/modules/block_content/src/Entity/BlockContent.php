@@ -20,8 +20,9 @@ use Drupal\block_content\BlockContentInterface;
  *   id = "block_content",
  *   label = @Translation("Custom Block"),
  *   bundle_label = @Translation("Custom Block type"),
- *   controllers = {
- *     "storage" = "Drupal\block_content\BlockContentStorage",
+ *   handlers = {
+ *     "storage" = "Drupal\Core\Entity\Sql\SqlContentEntityStorage",
+ *     "storage_schema" = "Drupal\block_content\BlockContentStorageSchema",
  *     "access" = "Drupal\block_content\BlockContentAccessControlHandler",
  *     "list_builder" = "Drupal\block_content\BlockContentListBuilder",
  *     "view_builder" = "Drupal\block_content\BlockContentViewBuilder",
@@ -41,9 +42,7 @@ use Drupal\block_content\BlockContentInterface;
  *     "canonical" = "entity.block_content.canonical",
  *     "delete-form" = "entity.block_content.delete_form",
  *     "edit-form" = "entity.block_content.canonical",
- *     "admin-form" = "entity.block_content_type.edit_form"
  *   },
- *   fieldable = TRUE,
  *   translatable = TRUE,
  *   entity_keys = {
  *     "id" = "id",
@@ -52,7 +51,8 @@ use Drupal\block_content\BlockContentInterface;
  *     "label" = "info",
  *     "uuid" = "uuid"
  *   },
- *   bundle_entity_type = "block_content_type"
+ *   bundle_entity_type = "block_content_type",
+ *   field_ui_base_route = "entity.block_content_type.edit_form",
  * )
  */
 class BlockContent extends ContentEntityBase implements BlockContentInterface {
@@ -167,7 +167,7 @@ class BlockContent extends ContentEntityBase implements BlockContentInterface {
       ->setTranslatable(TRUE)
       ->setRequired(TRUE)
       ->setDisplayOptions('form', array(
-        'type' => 'string',
+        'type' => 'string_textfield',
         'weight' => -5,
       ))
       ->setDisplayConfigurable('form', TRUE);

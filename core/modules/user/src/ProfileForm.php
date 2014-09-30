@@ -10,7 +10,7 @@ namespace Drupal\user;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Language\LanguageManager;
+use Drupal\Core\Language\LanguageManagerInterface;
 
 /**
  * Form controller for the profile forms.
@@ -20,7 +20,7 @@ class ProfileForm extends AccountForm {
   /**
    * {@inheritdoc}
    */
-  public function __construct(EntityManagerInterface $entity_manager, LanguageManager $language_manager, QueryFactory $entity_query) {
+  public function __construct(EntityManagerInterface $entity_manager, LanguageManagerInterface $language_manager, QueryFactory $entity_query) {
     parent::__construct($entity_manager, $language_manager, $entity_query);
   }
 
@@ -37,7 +37,7 @@ class ProfileForm extends AccountForm {
     $user = $this->currentUser();
     $element['delete']['#type'] = 'submit';
     $element['delete']['#value'] = $this->t('Cancel account');
-    $element['delete']['#submit'] = array(array($this, 'editCancelSubmit'));
+    $element['delete']['#submit'] = array('::editCancelSubmit');
     $element['delete']['#access'] = $account->id() > 1 && (($account->id() == $user->id() && $user->hasPermission('cancel account')) || $user->hasPermission('administer users'));
 
     return $element;
@@ -66,7 +66,7 @@ class ProfileForm extends AccountForm {
     }
     // We redirect from user/%/edit to user/%/cancel to make the tabs disappear.
     $form_state->setRedirect(
-      'user.cancel',
+      'entity.user.cancel_form',
       array('user' => $this->entity->id()),
       array('query' => $destination)
     );

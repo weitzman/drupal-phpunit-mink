@@ -67,10 +67,10 @@ interface UrlGeneratorInterface extends VersatileGeneratorInterface {
    *   - 'script': Added to the URL between the base path and the path prefix.
    *     Defaults to empty string when clean URLs are in effect, and to
    *     'index.php/' when they are not.
-   *   - 'entity_type': The entity type of the object that called url(). Only
-   *     set if url() is invoked by Drupal\Core\Entity\Entity::uri().
+   *   - 'entity_type': The entity type of the object that called _url(). Only
+   *     set if _url() is invoked by Drupal\Core\Entity\Entity::uri().
    *   - 'entity': The entity object (such as a node) for which the URL is being
-   *     generated. Only set if url() is invoked by Drupal\Core\Entity\Entity::uri().
+   *     generated. Only set if _url() is invoked by Drupal\Core\Entity\Entity::uri().
    *
    * @return
    *   A string containing a URL to the given path.
@@ -142,58 +142,5 @@ interface UrlGeneratorInterface extends VersatileGeneratorInterface {
    *   does not match the requirement.
    */
   public function generateFromRoute($name, $parameters = array(), $options = array());
-
-  /**
-   * Sets the baseUrl property.
-   *
-   * This property is made up of scheme, host and base_path, e.g.
-   *   'http://www.example.com/mydrupalinstall/'
-   *
-   * The base url is usually set by the request but we allow it to be set
-   * independent of the request so that code that calls url() outside the context
-   * of a request can use the global $base_url variable to set this value.
-   *
-   * @todo Remove this once the url() function no longer supports being called
-   *   when there is no request.
-   *
-   * @var string $url
-   *   The base url to use for url generation.
-   */
-  public function setBaseUrl($url);
-
-  /**
-   * Sets the basePath property.
-   *
-   * This will be either '/' or '[subdir]/', where [subdir] is the name of the
-   * subdirectory that Drupal is running in.
-   *
-   * The base path is usually set by the request but we allow it to be set
-   * independent of the request so that code that calls url() outside the context
-   * of a request can use the global $base_url variable to set this value.
-   *
-   * @todo Remove this once the url() function no longer supports being called
-   *   when there is no request.
-   *
-   * @var string $path
-   *   The base path to use for url generation.
-   */
-  public function setBasePath($path);
-
-  /**
-   * Sets the scriptPath property.
-   *
-   * The script path is usually set by the request and is either 'index.php' or
-   * the empty string, depending on whether the request path actually contains
-   * the script path or not. We allow it to be set independent of the request so
-   * that code that calls url() outside the context of a request can use the global
-   * $script_path variable to set this value.
-   *
-   * @todo Remove this once the url() function no longer supports being called
-   *   when there is no request.
-   *
-   * @var string $path
-   *   The script path to use for url generation.
-   */
-  public function setScriptPath($path);
 
 }

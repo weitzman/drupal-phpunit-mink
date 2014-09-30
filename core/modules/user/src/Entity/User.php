@@ -23,11 +23,13 @@ use Drupal\user\UserInterface;
  * @ContentEntityType(
  *   id = "user",
  *   label = @Translation("User"),
- *   controllers = {
+ *   handlers = {
  *     "storage" = "Drupal\user\UserStorage",
+ *     "storage_schema" = "Drupal\user\UserStorageSchema",
  *     "access" = "Drupal\user\UserAccessControlHandler",
  *     "list_builder" = "Drupal\user\UserListBuilder",
  *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
+ *     "views_data" = "Drupal\user\UserViewsData",
  *     "form" = {
  *       "default" = "Drupal\user\ProfileForm",
  *       "cancel" = "Drupal\user\Form\UserCancelForm",
@@ -37,19 +39,19 @@ use Drupal\user\UserInterface;
  *   },
  *   admin_permission = "administer user",
  *   base_table = "users",
+ *   data_table = "users_field_data",
  *   label_callback = "user_format_name",
- *   fieldable = TRUE,
  *   translatable = TRUE,
  *   entity_keys = {
  *     "id" = "uid",
  *     "uuid" = "uuid"
  *   },
  *   links = {
- *     "canonical" = "user.view",
- *     "edit-form" = "user.edit",
- *     "admin-form" = "user.account_settings",
- *     "cancel-form" = "user.cancel"
- *   }
+ *     "canonical" = "entity.user.canonical",
+ *     "edit-form" = "entity.user.edit_form",
+ *     "cancel-form" = "entity.user.cancel_form",
+ *   },
+ *   field_ui_base_route = "entity.user.admin_form",
  * )
  */
 class User extends ContentEntityBase implements UserInterface {
@@ -171,8 +173,8 @@ class User extends ContentEntityBase implements UserInterface {
     $roles = array();
 
     foreach ($this->get('roles') as $role) {
-      if (!($exclude_locked_roles && in_array($role->value, array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID)))) {
-        $roles[] = $role->value;
+      if (!($exclude_locked_roles && in_array($role->target_id, array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID)))) {
+        $roles[] = $role->target_id;
       }
     }
 
@@ -460,7 +462,8 @@ class User extends ContentEntityBase implements UserInterface {
 
     $fields['preferred_admin_langcode'] = BaseFieldDefinition::create('language')
       ->setLabel(t('Preferred language code'))
-      ->setDescription(t("The user's preferred language code for viewing administration pages."));
+      ->setDescription(t("The user's preferred language code for viewing administration pages."))
+      ->setDefaultValue('');
 
     // The name should not vary per language. The username is the visual
     // identifier for a user and needs to be consistent in all languages.
@@ -468,7 +471,7 @@ class User extends ContentEntityBase implements UserInterface {
       ->setLabel(t('Name'))
       ->setDescription(t('The name of this user.'))
       ->setDefaultValue('')
-      ->setPropertyConstraints('value', array(
+      ->setConstraints(array(
         // No Length constraint here because the UserName constraint also covers
         // that.
         'UserName' => array(),
@@ -483,12 +486,13 @@ class User extends ContentEntityBase implements UserInterface {
       ->setLabel(t('Email'))
       ->setDescription(t('The email of this user.'))
       ->setDefaultValue('')
-      ->setPropertyConstraints('value', array('UserMailUnique' => array()));
+      ->setConstraints(array('UserMailUnique' => array()));
 
     // @todo Convert to a text field in https://drupal.org/node/1548204.
     $fields['signature'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Signature'))
-      ->setDescription(t('The signature of this user.'));
+      ->setDescription(t('The signature of this user.'))
+      ->setTranslatable(TRUE);
     $fields['signature_format'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Signature format'))
       ->setDescription(t('The signature format of this user.'));
@@ -526,13 +530,12 @@ class User extends ContentEntityBase implements UserInterface {
       ->setDescription(t('The email address used for initial account creation.'))
       ->setDefaultValue('');
 
-    // @todo Convert this to entity_reference_field, see
-    // https://drupal.org/node/2044859.
-    $fields['roles'] = BaseFieldDefinition::create('string')
+    $fields['roles'] = BaseFieldDefinition::create('entity_reference')
       ->setCustomStorage(TRUE)
       ->setLabel(t('Roles'))
       ->setCardinality(BaseFieldDefinition::CARDINALITY_UNLIMITED)
-      ->setDescription(t('The roles the user has.'));
+      ->setDescription(t('The roles the user has.'))
+      ->setSetting('target_type', 'user_role');
 
     return $fields;
   }

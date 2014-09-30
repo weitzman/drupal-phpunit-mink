@@ -10,10 +10,10 @@ namespace Drupal\Core\Template;
 use Drupal\Component\Utility\SafeMarkup;
 
 /**
- * A class that can be used for collecting then rendering HTML attributtes.
+ * Collects, sanitizes, and renders HTML attributes.
  *
- * To use, one may both pass in an array of already defined attributes and
- * add attributes to it like using array syntax.
+ * To use, optionally pass in an associative array of defined attributes, or
+ * add attributes using array syntax. For example:
  * @code
  *  $attributes = new Attribute(array('id' => 'socks'));
  *  $attributes['class'] = array('black-cat', 'white-cat');
@@ -22,14 +22,25 @@ use Drupal\Component\Utility\SafeMarkup;
  *  // Produces <cat id="socks" class="black-cat white-cat black-white-cat">
  * @endcode
  *
- * individual parts of the attribute may be printed first.
+ * $attributes always prints out all the attributes. For example:
  * @code
  *  $attributes = new Attribute(array('id' => 'socks'));
  *  $attributes['class'] = array('black-cat', 'white-cat');
  *  $attributes['class'][] = 'black-white-cat';
  *  echo '<cat class="cat ' . $attributes['class'] . '"' . $attributes . '>';
- *  // Produces <cat class="cat black-cat white-cat black-white-cat" id="socks">
+ *  // Produces <cat class="cat black-cat white-cat black-white-cat" id="socks" class="cat black-cat white-cat black-white-cat">
  * @endcode
+ *
+ * When printing out individual attributes to customize them within a Twig
+ * template, use the "without" filter to prevent attributes that have already
+ * been printed from being printed again. For example:
+ * @code
+ *  <cat class="{{ attributes.class }} my-custom-class"{{ attributes|without('class') }}>
+ *  {# Produces <cat class="cat black-cat white-cat black-white-cat my-custom-class" id="socks"> #}
+ * @endcode
+ *
+ * The attribute keys and values are automatically sanitized for output with
+ * \Drupal\Component\Utility\String::checkPlain().
  */
 class Attribute implements \ArrayAccess, \IteratorAggregate {
 
@@ -117,7 +128,7 @@ class Attribute implements \ArrayAccess, \IteratorAggregate {
   }
 
   /**
-   * Adds argument values by merging them on to array of existing CSS classes.
+   * Adds classes or merges them on to array of existing CSS classes.
    *
    * @param string|array ...
    *   CSS classes to add to the class attribute array.
@@ -126,26 +137,24 @@ class Attribute implements \ArrayAccess, \IteratorAggregate {
    */
   public function addClass() {
     $args = func_get_args();
-    $classes = array();
-    foreach ($args as $arg) {
-      // Merge the values passed in from the classes array.
-      // The argument is cast to an array to support comma separated single
-      // values or one or more array arguments.
-      $classes = array_merge($classes, (array) $arg);
-    }
+    if ($args) {
+      $classes = array();
+      foreach ($args as $arg) {
+        // Merge the values passed in from the classes array.
+        // The argument is cast to an array to support comma separated single
+        // values or one or more array arguments.
+        $classes = array_merge($classes, (array) $arg);
+      }
 
-    // Merge if there are values, just add them otherwise.
-    if (isset($this->storage['class']) && $this->storage['class'] instanceOf AttributeArray) {
-      // Merge the values passed in from the class value array.
-      $classes = array_merge($this->storage['class']->value(), $classes);
-      // Filter out any duplicate values.
-      $classes = array_unique($classes);
-      $this->storage['class']->exchangeArray($classes);
-    }
-    else {
-      // Filter out any duplicate values.
-      $classes = array_unique($classes);
-      $this->offsetSet('class', $classes);
+      // Merge if there are values, just add them otherwise.
+      if (isset($this->storage['class']) && $this->storage['class'] instanceOf AttributeArray) {
+        // Merge the values passed in from the class value array.
+        $classes = array_merge($this->storage['class']->value(), $classes);
+        $this->storage['class']->exchangeArray($classes);
+      }
+      else {
+        $this->offsetSet('class', $classes);
+      }
     }
 
     return $this;
@@ -171,8 +180,9 @@ class Attribute implements \ArrayAccess, \IteratorAggregate {
         $classes = array_merge($classes, (array) $arg);
       }
 
-      // Remove the values passed in from the value array.
-      $classes = array_diff($this->storage['class']->value(), $classes);
+      // Remove the values passed in from the value array. Use array_values() to
+      // ensure that the array index remains sequential.
+      $classes = array_values(array_diff($this->storage['class']->value(), $classes));
       $this->storage['class']->exchangeArray($classes);
     }
     return $this;

@@ -44,11 +44,12 @@ class TriggeringElementProgrammedUnitTest extends DrupalUnitTestBase implements 
       '#required' => TRUE,
     );
     $form['actions'] = array('#type' => 'actions');
+    $user_input = $form_state->getUserInput();
     $form['actions']['submit'] = array(
       '#type' => 'submit',
       '#value' => 'Save',
       '#limit_validation_errors' => array(
-        array($form_state['input']['section']),
+        array($user_input['section']),
       ),
       // Required for #limit_validation_errors.
       '#submit' => array(array($this, 'submitForm')),
@@ -61,7 +62,7 @@ class TriggeringElementProgrammedUnitTest extends DrupalUnitTestBase implements 
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     // Verify that the only submit button was recognized as triggering_element.
-    $this->assertEqual($form['actions']['submit']['#array_parents'], $form_state['triggering_element']['#array_parents']);
+    $this->assertEqual($form['actions']['submit']['#array_parents'], $form_state->getTriggeringElement()['#array_parents']);
   }
 
   /**

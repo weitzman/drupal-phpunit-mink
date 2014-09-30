@@ -9,21 +9,21 @@ namespace Drupal\comment;
 
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Database\Connection;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Entity\ContentEntityDatabaseStorage;
+use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Defines the controller class for comments.
  *
- * This extends the Drupal\Core\Entity\ContentEntityDatabaseStorage class,
+ * This extends the Drupal\Core\Entity\Sql\SqlContentEntityStorage class,
  * adding required special handling for comment entities.
  */
-class CommentStorage extends ContentEntityDatabaseStorage implements CommentStorageInterface {
+class CommentStorage extends SqlContentEntityStorage implements CommentStorageInterface {
 
   /**
    * The current user.
@@ -132,14 +132,14 @@ class CommentStorage extends ContentEntityDatabaseStorage implements CommentStor
    * {@inheritdoc}
    */
   public function getNewCommentPageNumber($total_comments, $new_comments, ContentEntityInterface $entity, $field_name = 'comment') {
-    $instance = $entity->getFieldDefinition($field_name);
-    $comments_per_page = $instance->getSetting('per_page');
+    $field = $entity->getFieldDefinition($field_name);
+    $comments_per_page = $field->getSetting('per_page');
 
     if ($total_comments <= $comments_per_page) {
       // Only one page of comments.
       $count = 0;
     }
-    elseif ($instance->getSetting('default_mode') == CommentManagerInterface::COMMENT_MODE_FLAT) {
+    elseif ($field->getSetting('default_mode') == CommentManagerInterface::COMMENT_MODE_FLAT) {
       // Flat comments.
       $count = $total_comments - $new_comments;
     }
@@ -316,48 +316,6 @@ class CommentStorage extends ContentEntityDatabaseStorage implements CommentStor
     }
 
     return $comments;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getSchema() {
-    $schema = parent::getSchema();
-
-    // Marking the respective fields as NOT NULL makes the indexes more
-    // performant.
-    $schema['comment_field_data']['fields']['created']['not null'] = TRUE;
-    $schema['comment_field_data']['fields']['thread']['not null'] = TRUE;
-
-    unset($schema['comment_field_data']['indexes']['comment_field__pid__target_id']);
-    unset($schema['comment_field_data']['indexes']['comment_field__entity_id__target_id']);
-    $schema['comment_field_data']['indexes'] += array(
-      'comment__status_pid' => array('pid', 'status'),
-      'comment__num_new' => array(
-        'entity_id',
-        'entity_type',
-        'comment_type',
-        'status',
-        'created',
-        'cid',
-        'thread',
-      ),
-      'comment__entity_langcode' => array(
-        'entity_id',
-        'entity_type',
-        'comment_type',
-        'default_langcode',
-      ),
-      'comment__created' => array('created'),
-    );
-    $schema['comment_field_data']['foreign keys'] += array(
-      'comment__author' => array(
-        'table' => 'users',
-        'columns' => array('uid' => 'uid'),
-      ),
-    );
-
-    return $schema;
   }
 
   /**

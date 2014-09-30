@@ -7,6 +7,7 @@
 
 namespace Drupal\Tests\Core\Entity;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Entity\Entity;
 use Drupal\Core\Entity\Exception\NoCorrespondingEntityClassException;
@@ -18,6 +19,7 @@ use Drupal\Tests\UnitTestCase;
 /**
  * @coversDefaultClass \Drupal\Core\Entity\Entity
  * @group Entity
+ * @group Access
  */
 class EntityUnitTest extends UnitTestCase {
 
@@ -87,7 +89,7 @@ class EntityUnitTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  protected function setUp() {
     $this->values = array(
       'id' => 1,
       'langcode' => 'en',
@@ -213,15 +215,15 @@ class EntityUnitTest extends UnitTestCase {
     $access->expects($this->at(0))
       ->method('access')
       ->with($this->entity, $operation)
-      ->will($this->returnValue(TRUE));
+      ->will($this->returnValue(AccessResult::allowed()));
     $access->expects($this->at(1))
       ->method('createAccess')
-      ->will($this->returnValue(TRUE));
+      ->will($this->returnValue(AccessResult::allowed()));
     $this->entityManager->expects($this->exactly(2))
       ->method('getAccessControlHandler')
       ->will($this->returnValue($access));
-    $this->assertTrue($this->entity->access($operation));
-    $this->assertTrue($this->entity->access('create'));
+    $this->assertEquals(AccessResult::allowed(), $this->entity->access($operation));
+    $this->assertEquals(AccessResult::allowed(), $this->entity->access('create'));
   }
 
   /**
@@ -250,7 +252,6 @@ class EntityUnitTest extends UnitTestCase {
 
   /**
    * @covers ::load
-   * @covers ::getEntityTypeFromStaticClass
    *
    * Tests Entity::load() when called statically on a subclass of Entity.
    */
@@ -280,7 +281,6 @@ class EntityUnitTest extends UnitTestCase {
 
   /**
    * @covers ::loadMultiple
-   * @covers ::getEntityTypeFromStaticClass
    *
    * Tests Entity::loadMultiple() when called statically on a subclass of
    * Entity.
@@ -312,7 +312,6 @@ class EntityUnitTest extends UnitTestCase {
 
   /**
    * @covers ::create
-   * @covers ::getEntityTypeFromStaticClass
    */
   public function testCreate() {
     $this->setupTestLoad();
@@ -393,13 +392,13 @@ class EntityUnitTest extends UnitTestCase {
     $this->cacheBackend->expects($this->at(0))
       ->method('invalidateTags')
       ->with(array(
-        $this->entityTypeId . 's' => TRUE, // List cache tag.
+        $this->entityTypeId . 's', // List cache tag.
       ));
     $this->cacheBackend->expects($this->at(1))
       ->method('invalidateTags')
       ->with(array(
-        $this->entityTypeId . 's' => TRUE, // List cache tag.
-        $this->entityTypeId => array($this->values['id']), // Own cache tag.
+        $this->entityTypeId . ':' . $this->values['id'], // Own cache tag.
+        $this->entityTypeId . 's', // List cache tag.
       ));
 
     // This method is internal, so check for errors on calling it only.
@@ -450,8 +449,8 @@ class EntityUnitTest extends UnitTestCase {
     $this->cacheBackend->expects($this->once())
       ->method('invalidateTags')
       ->with(array(
-        $this->entityTypeId => array($this->values['id']),
-        $this->entityTypeId . 's' => TRUE,
+        $this->entityTypeId . ':' . $this->values['id'],
+        $this->entityTypeId . 's',
       ));
     $storage = $this->getMock('\Drupal\Core\Entity\EntityStorageInterface');
 

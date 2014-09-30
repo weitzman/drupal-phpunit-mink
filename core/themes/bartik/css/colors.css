@@ -8,8 +8,8 @@ body {
 }
 #page,
 #main-wrapper,
-#main-menu-links li a.active,
-#main-menu-links li.active-trail a {
+.region-primary-menu .menu li a.active,
+.region-primary-menu .menu li .active-trail a {
   background: #ffffff;
 }
 .tabs ul.primary li a.active {
@@ -21,11 +21,7 @@ body {
 }
 #header {
   background-color: #1d84c3;
-  background-image: -moz-linear-gradient(to bottom, #055a8e 0%, #1d84c3 100%);
-  background-image: -ms-linear-gradient(to bottom, #055a8e 0%, #1d84c3 100%);
-  background-image: -o-linear-gradient(to bottom, #055a8e 0%, #1d84c3 100%);
-  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0.7, #055a8e), color-stop(1, #1d84c3));
-  background-image: -webkit-linear-gradient(to bottom, #055a8e 0%, #1d84c3 100%);
+  background-image: -webkit-linear-gradient(top, #055a8e 0%, #1d84c3 100%);
   background-image: linear-gradient(to bottom, #055a8e 0%, #1d84c3 100%);
 }
 a,
@@ -57,6 +53,6 @@ a:active,
 .site-branding-block,
 #name-and-slogan a,
 .site-branding-block a,
-#secondary-menu-links li a {
+.region-secondary-menu .menu li a {
   color: #fffeff;
 }

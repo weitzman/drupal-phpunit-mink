@@ -9,8 +9,8 @@ namespace Drupal\system\Tests\Form;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\simpletest\WebTestBase;
-use Drupal\Core\Language\Language;
 
 /**
  * Tests that the language select form element prints and submits the right
@@ -32,17 +32,15 @@ class LanguageSelectElementTest extends WebTestBase {
    */
   function testLanguageSelectElementOptions() {
     // Add some languages.
-    $language = new Language(array(
+    ConfigurableLanguage::create(array(
       'id' => 'aaa',
-      'name' => $this->randomMachineName(),
-    ));
-    language_save($language);
+      'label' => $this->randomMachineName(),
+    ))->save();
 
-    $language = new Language(array(
+    ConfigurableLanguage::create(array(
       'id' => 'bbb',
-      'name' => $this->randomMachineName(),
-    ));
-    language_save($language);
+      'label' => $this->randomMachineName(),
+    ))->save();
 
     \Drupal::languageManager()->reset();
 
@@ -58,7 +56,7 @@ class LanguageSelectElementTest extends WebTestBase {
       $this->assertField($id, format_string('The @id field was found on the page.', array('@id' => $id)));
       $options = array();
       foreach ($this->container->get('language_manager')->getLanguages($flags) as $langcode => $language) {
-        $options[$langcode] = $language->locked ? t('- @name -', array('@name' => $language->name)) : $language->name;
+        $options[$langcode] = $language->isLocked() ? t('- @name -', array('@name' => $language->name)) : $language->name;
       }
       $this->_testLanguageSelectElementOptions($id, $options);
     }

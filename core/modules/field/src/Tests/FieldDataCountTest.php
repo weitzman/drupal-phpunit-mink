@@ -7,7 +7,7 @@
 
 namespace Drupal\field\Tests;
 
-use Drupal\Core\Entity\ContentEntityDatabaseStorage;
+use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 
 /**
  * Tests counting field data records and the hasData() method on
@@ -20,14 +20,14 @@ use Drupal\Core\Entity\ContentEntityDatabaseStorage;
 class FieldDataCountTest extends FieldUnitTestBase {
 
   /**
-   * @var \Drupal\Core\Entity\FieldableEntityStorageInterface
+   * @var \Drupal\Core\Entity\DynamicallyFieldableEntityStorageInterface
    */
   protected $storage;
 
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
     $this->storage = \Drupal::entityManager()->getStorage('entity_test');
   }
@@ -40,13 +40,13 @@ class FieldDataCountTest extends FieldUnitTestBase {
     // entities and not rows in a table.
     /** @var \Drupal\field\Entity\FieldStorageConfig $field_storage */
     $field_storage = entity_create('field_storage_config', array(
-      'name' => 'field_int',
+      'field_name' => 'field_int',
       'entity_type' => 'entity_test',
       'type' => 'integer',
       'cardinality' => 2,
     ));
     $field_storage->save();
-    entity_create('field_instance_config', array(
+    entity_create('field_config', array(
       'field_storage' => $field_storage,
       'bundle' => 'entity_test',
     ))->save();
@@ -74,9 +74,10 @@ class FieldDataCountTest extends FieldUnitTestBase {
     }
 
     $storage = \Drupal::entityManager()->getStorage('entity_test');
-    if ($storage instanceof ContentEntityDatabaseStorage) {
+    if ($storage instanceof SqlContentEntityStorage) {
       // Count the actual number of rows in the field table.
-      $field_table_name = $storage->_fieldTableName($field_storage);
+      $table_mapping = $storage->getTableMapping();
+      $field_table_name = $table_mapping->getDedicatedDataTableName($field_storage);
       $result = db_select($field_table_name, 't')
         ->fields('t')
         ->countQuery()

@@ -71,7 +71,7 @@ class ThemeSettingsForm extends ConfigFormBase {
 
     $themes = list_themes();
 
-    // Deny access if the theme is disabled or not found.
+    // Deny access if the theme is not installed or not found.
     if (!empty($theme) && (empty($themes[$theme]) || !$themes[$theme]->status)) {
       throw new NotFoundHttpException();
     }
@@ -106,8 +106,6 @@ class ThemeSettingsForm extends ConfigFormBase {
       'comment_user_picture' => t('User pictures in comments'),
       'comment_user_verification' => t('User verification status in comments'),
       'favicon' => t('Shortcut icon'),
-      'main_menu' => t('Main menu'),
-      'secondary_menu' => t('Secondary menu'),
     );
 
     // Some features are not always available
@@ -248,7 +246,7 @@ class ThemeSettingsForm extends ConfigFormBase {
           $local_file = drupal_get_path('theme', $theme) . '/' . $default;
         }
         else {
-          $local_file = path_to_theme() . '/' . $default;
+          $local_file = \Drupal::theme()->getActiveTheme()->getPath() . '/' . $default;
         }
 
         $element['#description'] = t('Examples: <code>@implicit-public-file</code> (for a file in the public filesystem), <code>@explicit-file</code>, or <code>@local-file</code>.', array(
@@ -284,8 +282,11 @@ class ThemeSettingsForm extends ConfigFormBase {
       // Save the name of the current theme (if any), so that we can temporarily
       // override the current theme and allow theme_get_setting() to work
       // without having to pass the theme name to it.
-      $default_theme = !empty($GLOBALS['theme_key']) ? $GLOBALS['theme_key'] : NULL;
-      $GLOBALS['theme_key'] = $theme;
+      $default_active_theme = \Drupal::theme()->getActiveTheme();
+      $default_theme = $default_active_theme->getName();
+      /** @var \Drupal\Core\Theme\ThemeInitialization $theme_initialization */
+      $theme_initialization = \Drupal::service('theme.initialization');
+      \Drupal::theme()->setActiveTheme($theme_initialization->getActiveThemeByName($theme));
 
       // Process the theme and all its base themes.
       foreach ($theme_keys as $theme) {
@@ -304,10 +305,10 @@ class ThemeSettingsForm extends ConfigFormBase {
 
       // Restore the original current theme.
       if (isset($default_theme)) {
-        $GLOBALS['theme_key'] = $default_theme;
+        \Drupal::theme()->setActiveTheme($default_active_theme);
       }
       else {
-        unset($GLOBALS['theme_key']);
+        \Drupal::theme()->resetActiveTheme();
       }
     }
 
@@ -380,7 +381,7 @@ class ThemeSettingsForm extends ConfigFormBase {
     $config = $this->config($form_state->getValue('config_key'));
 
     // Exclude unnecessary elements before saving.
-    form_state_values_clean($form_state);
+    $form_state->cleanValues();
     $form_state->unsetValue('var');
     $form_state->unsetValue('config_key');
 
@@ -423,10 +424,10 @@ class ThemeSettingsForm extends ConfigFormBase {
     // Invalidate either the theme-specific cache tag or the global theme
     // settings cache tag, depending on whose settings were actually changed.
     if (isset($values['theme'])) {
-      Cache::invalidateTags(array('theme' => $values['theme']));
+      Cache::invalidateTags(array('theme:' . $values['theme']));
     }
     else {
-      Cache::invalidateTags(array('theme_global_settings' => TRUE));
+      Cache::invalidateTags(array('theme_global_settings'));
     }
   }
 

@@ -21,10 +21,12 @@ use Drupal\user\UserInterface;
  * @ContentEntityType(
  *   id = "file",
  *   label = @Translation("File"),
- *   controllers = {
+ *   handlers = {
  *     "storage" = "Drupal\file\FileStorage",
+ *     "storage_schema" = "Drupal\file\FileStorageSchema",
  *     "access" = "Drupal\file\FileAccessControlHandler",
- *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder"
+ *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
+ *     "views_data" = "Drupal\file\FileViewsData",
  *   },
  *   base_table = "file_managed",
  *   entity_keys = {

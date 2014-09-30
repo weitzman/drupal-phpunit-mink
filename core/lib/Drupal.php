@@ -6,6 +6,7 @@
  */
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Url;
 
 /**
  * Static Service Container wrapper.
@@ -185,6 +186,16 @@ class Drupal {
    */
   public static function request() {
     return static::$container->get('request_stack')->getCurrentRequest();
+  }
+
+  /**
+   * Retrives the request stack.
+   *
+   * @return \Symfony\Component\HttpFoundation\RequestStack
+   *   The request stack
+   */
+  public static function requestStack() {
+    return static::$container->get('request_stack');
   }
 
   /**
@@ -521,13 +532,9 @@ class Drupal {
    *
    * @param string|array $text
    *   The link text for the anchor tag as a translated string or render array.
-   * @param string $route_name
-   *   The name of the route to use to generate the link.
-   * @param array $parameters
-   *   (optional) Any parameters needed to render the route path pattern.
-   * @param array $options
-   *   (optional) An associative array of additional options. Defaults to an
-   *   empty array. It may contain the following elements:
+   * @param \Drupal\Core\Url $url
+   *   The URL object used for the link. Amongst its options, the following may
+   *   be set to affect the generated link:
    *   - 'query': An array of query key/value-pairs (without any URL-encoding) to
    *     append to the URL.
    *   - absolute: Whether to force the output to be an absolute link (beginning
@@ -562,8 +569,8 @@ class Drupal {
    * @see \Drupal\Core\Routing\UrlGeneratorInterface::generateFromRoute()
    * @see \Drupal\Core\Utility\LinkGeneratorInterface::generate()
    */
-  public static function l($text, $route_name, array $parameters = array(), array $options = array()) {
-    return static::$container->get('link_generator')->generate($text, $route_name, $parameters, $options);
+  public static function l($text, Url $url) {
+    return static::$container->get('link_generator')->generate($text, $url);
   }
 
   /**
@@ -624,6 +631,15 @@ class Drupal {
   }
 
   /**
+   * Gets the theme service.
+   *
+   * @return \Drupal\Core\Theme\ThemeManagerInterface
+   */
+  public static function theme() {
+    return static::$container->get('theme.manager');
+  }
+
+  /**
    * Gets the syncing state.
    *
    * @return bool
@@ -655,6 +671,25 @@ class Drupal {
    */
   public static function menuTree() {
     return static::$container->get('menu.link_tree');
+  }
+
+  /**
+   * Returns the path validator.
+   *
+   * @return \Drupal\Core\Path\PathValidatorInterface
+   */
+  public static function pathValidator() {
+    return static::$container->get('path.validator');
+  }
+
+  /**
+   * Returns the access manager service.
+   *
+   * @return \Drupal\Core\Access\AccessManagerInterface
+   *   The access manager service.
+   */
+  public static function accessManager() {
+    return static::$container->get('access_manager');
   }
 
 }

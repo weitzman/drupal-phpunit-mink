@@ -22,6 +22,7 @@ abstract class MigrateNodeTestBase extends MigrateDrupalTestBase {
    */
   protected function setUp() {
     parent::setUp();
+    entity_create('node_type', array('type' => 'test_planet'))->save();
     $node_type = entity_create('node_type', array('type' => 'story'));
     $node_type->save();
     node_add_body_field($node_type);
@@ -47,7 +48,7 @@ abstract class MigrateNodeTestBase extends MigrateDrupalTestBase {
         ),
       ),
     );
-    $this->prepareIdMappings($id_mappings);
+    $this->prepareMigrations($id_mappings);
 
     $migration = entity_load('migration', 'd6_node_settings');
     $migration->setMigrationResult(MigrationInterface::RESULT_COMPLETED);
@@ -57,6 +58,14 @@ abstract class MigrateNodeTestBase extends MigrateDrupalTestBase {
       'type' => 'story',
       'nid' => 1,
       'vid' => 1,
+    ));
+    $node->enforceIsNew();
+    $node->save();
+
+    $node = entity_create('node', array(
+      'type' => 'test_planet',
+      'nid' => 3,
+      'vid' => 4,
     ));
     $node->enforceIsNew();
     $node->save();

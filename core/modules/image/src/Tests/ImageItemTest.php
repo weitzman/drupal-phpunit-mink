@@ -38,19 +38,19 @@ class ImageItemTest extends FieldUnitTestBase {
    */
   protected $imageFactory;
 
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
 
     $this->installEntitySchema('file');
     $this->installSchema('file', array('file_usage'));
 
     entity_create('field_storage_config', array(
-      'name' => 'image_test',
       'entity_type' => 'entity_test',
+      'field_name' => 'image_test',
       'type' => 'image',
       'cardinality' => FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED,
     ))->save();
-    entity_create('field_instance_config', array(
+    entity_create('field_config', array(
       'entity_type' => 'entity_test',
       'field_name' => 'image_test',
       'bundle' => 'entity_test',
@@ -114,6 +114,11 @@ class ImageItemTest extends FieldUnitTestBase {
     $this->image->delete();
     $entity = entity_create('entity_test', array('mame' => $this->randomMachineName()));
     $entity->save();
+
+    // Test the generateSampleValue() method.
+    $entity = entity_create('entity_test');
+    $entity->image_test->generateSampleItems();
+    $this->entityValidateAndSave($entity);
   }
 
 }

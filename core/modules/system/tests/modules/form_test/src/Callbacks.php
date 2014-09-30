@@ -28,15 +28,15 @@ class Callbacks {
       $triggered = TRUE;
     }
     if ($form_state->getValue('name') == 'element_validate_access') {
-      $form_state['storage']['form_test_name'] = $form_state->getValue('name');
+      $form_state->set('form_test_name', $form_state->getValue('name'));
       // Alter the form element.
       $element['#access'] = FALSE;
 
       $triggered = TRUE;
     }
-    elseif (!empty($form_state['storage']['form_test_name'])) {
+    elseif ($form_state->has('form_test_name')) {
       // To simplify this test, just take over the element's value into $form_state.
-      form_set_value($element, $form_state['storage']['form_test_name'], $form_state);
+      form_set_value($element, $form_state->get('form_test_name'), $form_state);
 
       $triggered = TRUE;
     }
@@ -46,7 +46,7 @@ class Callbacks {
       drupal_set_message(t('@label value: @value', array('@label' => $element['#title'], '@value' => $form_state->getValue('name'))));
 
       // Trigger a form validation error to see our changes.
-      form_set_error('', $form_state);
+      $form_state->setErrorByName('');
     }
   }
 

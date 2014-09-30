@@ -7,6 +7,7 @@
 
 namespace Drupal\comment;
 
+use Drupal\Core\Entity\ContentEntityTypeInterface;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
@@ -88,18 +89,30 @@ class CommentTypeForm extends EntityForm {
       '#title' => t('Description'),
     );
 
-    $options = array();
-    foreach ($this->entityManager->getDefinitions() as $entity_type) {
-      if ($entity_type->isFieldable()) {
-        $options[$entity_type->id()] = $entity_type->getLabel();
+    if ($comment_type->isNew()) {
+      $options = array();
+      foreach ($this->entityManager->getDefinitions() as $entity_type) {
+        // Only expose entities that have field UI enabled, only those can
+        // get comment fields added in the UI.
+        if ($entity_type->get('field_ui_base_route')) {
+          $options[$entity_type->id()] = $entity_type->getLabel();
+        }
       }
+      $form['target_entity_type_id'] = array(
+        '#type' => 'select',
+        '#default_value' => $comment_type->getTargetEntityTypeId(),
+        '#title' => t('Target entity type'),
+        '#options' => $options,
+        '#description' => t('The target entity type can not be changed after the comment type has been created.')
+      );
     }
-    $form['target_entity_type_id'] = array(
-      '#type' => 'select',
-      '#default_value' => $comment_type->getTargetEntityTypeId(),
-      '#title' => t('Target entity type'),
-      '#options' => $options,
-    );
+    else {
+      $form['target_entity_type_id_display'] = array(
+        '#type' => 'item',
+        '#markup' => $this->entityManager->getDefinition($comment_type->getTargetEntityTypeId())->getLabel(),
+        '#title' => t('Target entity type'),
+      );
+    }
 
     if ($this->moduleHandler->moduleExists('content_translation')) {
       $form['language'] = array(
@@ -137,7 +150,7 @@ class CommentTypeForm extends EntityForm {
     $comment_type = $this->entity;
     $status = $comment_type->save();
 
-    $edit_link = \Drupal::linkGenerator()->generateFromUrl($this->t('Edit'), $this->entity->urlInfo());
+    $edit_link = $this->entity->link($this->t('Edit'));
     if ($status == SAVED_UPDATED) {
       drupal_set_message(t('Comment type %label has been updated.', array('%label' => $comment_type->label())));
       $this->logger->notice('Comment type %label has been updated.', array('%label' => $comment_type->label(), 'link' => $edit_link));

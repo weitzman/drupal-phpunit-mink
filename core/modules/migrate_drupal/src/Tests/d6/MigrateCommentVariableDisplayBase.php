@@ -51,13 +51,13 @@ abstract class MigrateCommentVariableDisplayBase extends MigrateDrupalTestBase {
     parent::setUp();
     entity_create('field_storage_config', array(
       'entity_type' => 'node',
-      'name' => 'comment',
+      'field_name' => 'comment',
       'type' => 'comment',
       'translatable' => '0',
     ))->save();
     foreach ($this->types as $type) {
       entity_create('node_type', array('type' => $type))->save();
-      entity_create('field_instance_config', array(
+      entity_create('field_config', array(
         'label' => 'Comments',
         'description' => '',
         'field_name' => 'comment',
@@ -74,7 +74,7 @@ abstract class MigrateCommentVariableDisplayBase extends MigrateDrupalTestBase {
         array(array('page'), array('node', 'comment', 'page')),
       ),
     );
-    $this->prepareIdMappings($id_mappings);
+    $this->prepareMigrations($id_mappings);
     /** @var \Drupal\migrate\entity\Migration $migration */
     $migration = entity_load('migration', static::MIGRATION);
     $this->prepare($migration, $this->dumps);
