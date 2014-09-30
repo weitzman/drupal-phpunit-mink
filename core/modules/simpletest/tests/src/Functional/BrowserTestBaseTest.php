@@ -25,28 +25,17 @@ class BrowserTestBaseTest extends BrowserTestBase {
   public static $modules = array('simpletest_test');
 
   /**
-   * The administrator user.
-   */
-  protected $adminUser = FALSE;
-
-  /**
    * Tests basic page test.
    */
   function testGoTo() {
-    // Go to the front page and make sure we can see some text.
-    $this->drupalGet('');
-    $this->assertPageTextContains("Enter your Drupal username.");
-
-    // Test login.
-    $this->adminUser = $this->drupalCreateUser();
-    $this->drupalLogin($this->adminUser);
-    $this->drupalUserIsLoggedIn($this->adminUser);
-
-    // Click a link.
+    // Visit a drupal page.
+    $this->drupalGet('/simpletest/hello');
 
     // Test response code.
+    $this->assertResponseStatus(200);
 
-
+    // Test page contains some text.
+    $this->assertPageTextContains('Hello Amsterdam');
   }
 
   /**
@@ -58,9 +47,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
     // Fill out form.
 
 
-    // File uplaod.
+    // File upload.
 
-    
   }
-
 }

@@ -1,0 +1,6 @@
+simpletest.settings:
+  path: '/simpletest/hello'
+  defaults:
+      _content: '\Drupal\simpletest_test\Controller\SimpletestController::hello'
+  requirements:
+    _access: 'TRUE'
