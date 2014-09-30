@@ -1,43 +1,24 @@
 <?php
 
-namespace Behat\Mink\Exception;
-
-use Behat\Mink\Session,
-    Behat\Mink\Element\Element;
-
 /*
- * This file is part of the Behat\Mink.
+ * This file is part of the Mink package.
  * (c) Konstantin Kudryashov <ever.zet@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
+namespace Behat\Mink\Exception;
+
 /**
- * Mink's element text exception.
+ * Exception thrown when an expectation on the text of an element fails.
  *
  * @author Konstantin Kudryashov <ever.zet@gmail.com>
  */
 class ElementTextException extends ElementHtmlException
 {
-    /**
-     * Returns exception message with additional context info.
-     *
-     * @return string
-     */
-    public function __toString()
+    protected function getContext()
     {
-        try {
-            $pageText = $this->trimString($this->element->getText());
-            $string   = sprintf("%s\n\n%s%s",
-                $this->getMessage(),
-                $this->getResponseInfo(),
-                $this->pipeString($pageText."\n")
-            );
-        } catch (\Exception $e) {
-            return $this->getMessage();
-        }
-
-        return $string;
+        return $this->element->getText();
     }
 }

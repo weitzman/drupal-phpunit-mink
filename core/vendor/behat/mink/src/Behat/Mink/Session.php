@@ -1,18 +1,18 @@
 <?php
 
-namespace Behat\Mink;
-
-use Behat\Mink\Driver\DriverInterface,
-    Behat\Mink\Selector\SelectorsHandler,
-    Behat\Mink\Element\DocumentElement;
-
 /*
- * This file is part of the Behat\Mink.
+ * This file is part of the Mink package.
  * (c) Konstantin Kudryashov <ever.zet@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
+namespace Behat\Mink;
+
+use Behat\Mink\Driver\DriverInterface;
+use Behat\Mink\Selector\SelectorsHandler;
+use Behat\Mink\Element\DocumentElement;
 
 /**
  * Mink session.
@@ -40,8 +40,8 @@ class Session
         }
 
         $this->driver           = $driver;
-        $this->page             = new DocumentElement($this);
         $this->selectorsHandler = $selectorsHandler;
+        $this->page             = new DocumentElement($this);
     }
 
     /**
@@ -56,6 +56,14 @@ class Session
 
     /**
      * Starts session driver.
+     *
+     * Calling any action before visiting a page is an undefined behavior.
+     * The only supported method calls on a fresh driver are
+     * - visit()
+     * - setRequestHeader()
+     * - setBasicAuth()
+     * - reset()
+     * - stop()
      */
     public function start()
     {
@@ -80,7 +88,15 @@ class Session
     }
 
     /**
-     * Reset session driver.
+     * Reset session driver state.
+     *
+     * Calling any action before visiting a page is an undefined behavior.
+     * The only supported method calls on a fresh driver are
+     * - visit()
+     * - setRequestHeader()
+     * - setBasicAuth()
+     * - reset()
+     * - stop()
      */
     public function reset()
     {
@@ -205,12 +221,32 @@ class Session
     /**
      * Capture a screenshot of the current window.
      *
-     * @return  string  screenshot of MIME type image/* depending 
-     *   on driver (e.g., image/png, image/jpeg)
+     * @return string screenshot of MIME type image/* depending
+     *                on driver (e.g., image/png, image/jpeg)
      */
     public function getScreenshot()
     {
         return $this->driver->getScreenshot();
+    }
+
+    /**
+     * Return the names of all open windows
+     *
+     * @return array Array of all open window's names.
+     */
+    public function getWindowNames()
+    {
+        return $this->driver->getWindowNames();
+    }
+
+    /**
+     * Return the name of the currently active window
+     *
+     * @return string The name of the current window.
+     */
+    public function getWindowName()
+    {
+        return $this->driver->getWindowName();
     }
 
     /**
@@ -284,21 +320,33 @@ class Session
      *
      * @param integer $time      time in milliseconds
      * @param string  $condition JS condition
+     *
+     * @return boolean
      */
     public function wait($time, $condition = 'false')
     {
-        $this->driver->wait($time, $condition);
+        return $this->driver->wait($time, $condition);
     }
 
     /**
      * Set the dimensions of the window.
      *
-     * @param integer $width set the window width, measured in pixels
+     * @param integer $width  set the window width, measured in pixels
      * @param integer $height set the window height, measured in pixels
-     * @param string $name window name (null for the main window)
+     * @param string  $name   window name (null for the main window)
      */
     public function resizeWindow($width, $height, $name = null)
     {
-        return $this->driver->resizeWindow($width, $height, $name);
+        $this->driver->resizeWindow($width, $height, $name);
+    }
+
+    /**
+     * Maximize the window if it is not maximized already
+     *
+     * @param string $name window name (null for the main window)
+     */
+    public function maximizeWindow($name = null)
+    {
+        $this->driver->maximizeWindow($name);
     }
 }

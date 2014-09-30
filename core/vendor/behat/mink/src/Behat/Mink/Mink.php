@@ -1,17 +1,14 @@
 <?php
 
-namespace Behat\Mink;
-
-use Behat\Mink\Driver\DriverInterface,
-    Behat\Mink\Selector\SelectorsHandler;
-
 /*
- * This file is part of the Behat\Mink.
+ * This file is part of the Mink package.
  * (c) Konstantin Kudryashov <ever.zet@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
+namespace Behat\Mink;
 
 /**
  * Mink sessions manager.
@@ -21,12 +18,18 @@ use Behat\Mink\Driver\DriverInterface,
 class Mink
 {
     private $defaultSessionName;
+
+    /**
+     * Sessions.
+     *
+     * @var Session[]
+     */
     private $sessions = array();
 
     /**
      * Initializes manager.
      *
-     * @param array $sessions
+     * @param Session[] $sessions
      */
     public function __construct(array $sessions = array())
     {
@@ -129,6 +132,7 @@ class Mink
     public function isSessionStarted($name = null)
     {
         $session = $this->locateSession($name);
+
         return $session->isStarted();
     }
 
@@ -144,6 +148,7 @@ class Mink
         if (!($session instanceof Session)) {
             $session = $this->getSession($session);
         }
+
         return new WebAssert($session);
     }
 
@@ -152,7 +157,7 @@ class Mink
      */
     public function resetSessions()
     {
-        foreach ($this->sessions as $name => $session) {
+        foreach ($this->sessions as $session) {
             if ($session->isStarted()) {
                 $session->reset();
             }
@@ -164,7 +169,7 @@ class Mink
      */
     public function restartSessions()
     {
-        foreach ($this->sessions as $name => $session) {
+        foreach ($this->sessions as $session) {
             if ($session->isStarted()) {
                 $session->restart();
             }
@@ -205,6 +210,7 @@ class Mink
         }
 
         $session = $this->sessions[$name];
+
         return $session;
     }
 }

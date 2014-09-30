@@ -1,16 +1,16 @@
 <?php
 
-namespace Behat\Mink\Selector;
-
-use Behat\Mink\Selector\SelectorInterface;
-
 /*
- * This file is part of the Behat\Mink.
+ * This file is part of the Mink package.
  * (c) Konstantin Kudryashov <ever.zet@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
+namespace Behat\Mink\Selector;
+
+use Behat\Mink\Selector\Xpath\Escaper;
 
 /**
  * Selectors handler.
@@ -20,16 +20,20 @@ use Behat\Mink\Selector\SelectorInterface;
 class SelectorsHandler
 {
     private $selectors;
+    private $escaper;
 
     /**
      * Initializes selectors handler.
      *
-     * @param array $selectors default selectors to register
+     * @param SelectorInterface[] $selectors default selectors to register
      */
     public function __construct(array $selectors = array())
     {
-        $this->registerSelector('named',    new NamedSelector());
-        $this->registerSelector('css',      new CssSelector());
+        $this->escaper = new Escaper();
+
+        $this->registerSelector('named_partial', new PartialNamedSelector());
+        $this->registerSelector('named_exact', new ExactNamedSelector());
+        $this->registerSelector('css', new CssSelector());
 
         foreach ($selectors as $name => $selector) {
             $this->registerSelector($name, $selector);
@@ -70,6 +74,15 @@ class SelectorsHandler
      */
     public function getSelector($name)
     {
+        if ('named' === $name) {
+            trigger_error(
+                'Using the "named" selector directly from the handler is deprecated as of 1.6 and will be removed in 2.0.'
+                .' Use the "named_partial" or use the "named" selector through the Element API instead.',
+                E_USER_DEPRECATED
+            );
+            $name = 'named_partial';
+        }
+
         if (!$this->isSelectorRegistered($name)) {
             throw new \InvalidArgumentException("Selector \"$name\" is not registered.");
         }
@@ -80,14 +93,18 @@ class SelectorsHandler
     /**
      * Translates selector with specified name to XPath.
      *
-     * @param string $selector selector engine name (registered)
-     * @param string $locator  selector locator
+     * @param string       $selector selector engine name (registered)
+     * @param string|array $locator  selector locator (an array or a string depending of the selector being used)
      *
      * @return string
      */
     public function selectorToXpath($selector, $locator)
     {
         if ('xpath' === $selector) {
+            if (!is_string($locator)) {
+                throw new \InvalidArgumentException('The xpath selector expects to get a string as locator');
+            }
+
             return $locator;
         }
 
@@ -103,27 +120,6 @@ class SelectorsHandler
      */
     public function xpathLiteral($s)
     {
-        if (false === strpos($s, "'")) {
-            return sprintf("'%s'", $s);
-        }
-
-        if (false === strpos($s, '"')) {
-            return sprintf('"%s"', $s);
-        }
-
-        $string = $s;
-        $parts = array();
-        while (true) {
-            if (false !== $pos = strpos($string, "'")) {
-                $parts[] = sprintf("'%s'", substr($string, 0, $pos));
-                $parts[] = "\"'\"";
-                $string = substr($string, $pos + 1);
-            } else {
-                $parts[] = "'$string'";
-                break;
-            }
-        }
-
-        return sprintf("concat(%s)", implode($parts, ','));
+        return $this->escaper->escapeLiteral($s);
     }
 }

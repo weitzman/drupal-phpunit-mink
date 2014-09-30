@@ -1,40 +1,24 @@
 <?php
 
-namespace Behat\Mink\Exception;
-
 /*
- * This file is part of the Behat\Mink.
+ * This file is part of the Mink package.
  * (c) Konstantin Kudryashov <ever.zet@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
+namespace Behat\Mink\Exception;
+
 /**
- * Mink response's text exception.
+ * Exception thrown when an expectation on the response text fails.
  *
  * @author Konstantin Kudryashov <ever.zet@gmail.com>
  */
 class ResponseTextException extends ExpectationException
 {
-    /**
-     * Returns exception message with additional context info.
-     *
-     * @return string
-     */
-    public function __toString()
+    protected function getContext()
     {
-        try {
-            $pageText = $this->trimString($this->getSession()->getPage()->getText());
-            $string   = sprintf("%s\n\n%s%s",
-                $this->getMessage(),
-                $this->getResponseInfo(),
-                $this->pipeString($pageText."\n")
-            );
-        } catch (\Exception $e) {
-            return $this->getMessage();
-        }
-
-        return $string;
+        return $this->getSession()->getPage()->getText();
     }
 }

@@ -1,16 +1,16 @@
 <?php
 
-namespace Behat\Mink\Element;
-
-use Behat\Mink\Exception\ElementNotFoundException;
-
 /*
- * This file is part of the Behat\Mink.
+ * This file is part of the Mink package.
  * (c) Konstantin Kudryashov <ever.zet@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
+namespace Behat\Mink\Element;
+
+use Behat\Mink\Exception\ElementNotFoundException;
 
 /**
  * Traversable element.
@@ -20,7 +20,7 @@ use Behat\Mink\Exception\ElementNotFoundException;
 abstract class TraversableElement extends Element
 {
     /**
-     * Finds element by it's id.
+     * Finds element by its id.
      *
      * @param string $id element id
      *
@@ -28,13 +28,13 @@ abstract class TraversableElement extends Element
      */
     public function findById($id)
     {
-        $id = $this->getSession()->getSelectorsHandler()->xpathLiteral($id);
+        $id = $this->getSelectorsHandler()->xpathLiteral($id);
 
-        return $this->find('xpath', "//*[@id=$id]");
+        return $this->find('named', array('id', $id));
     }
 
     /**
-     * Checks whether document has a link with specified locator.
+     * Checks whether element has a link with specified locator.
      *
      * @param string $locator link id, title, text or image alt
      *
@@ -55,7 +55,7 @@ abstract class TraversableElement extends Element
     public function findLink($locator)
     {
         return $this->find('named', array(
-            'link', $this->getSession()->getSelectorsHandler()->xpathLiteral($locator)
+            'link', $this->getSelectorsHandler()->xpathLiteral($locator)
         ));
     }
 
@@ -71,16 +71,14 @@ abstract class TraversableElement extends Element
         $link = $this->findLink($locator);
 
         if (null === $link) {
-            throw new ElementNotFoundException(
-                $this->getSession(), 'link', 'id|title|alt|text', $locator
-            );
+            throw $this->elementNotFound('link', 'id|title|alt|text', $locator);
         }
 
         $link->click();
     }
 
     /**
-     * Checks whether document has a button (input[type=submit|image|button], button) with specified locator.
+     * Checks whether element has a button (input[type=submit|image|button|reset], button) with specified locator.
      *
      * @param string $locator button id, value or alt
      *
@@ -92,23 +90,7 @@ abstract class TraversableElement extends Element
     }
 
     /**
-     * Checks whether an element has a named CSS class
-     *
-     * @param string $className Name of the class
-     *
-     * @return boolean
-     */
-    public function hasClass($className)
-    {
-        if ($this->hasAttribute('class')) {
-            return in_array($className, explode(' ', $this->getAttribute('class')));
-        }
-        
-        return false;
-    }
-
-    /**
-     * Finds button (input[type=submit|image|button], button) with specified locator.
+     * Finds button (input[type=submit|image|button|reset], button) with specified locator.
      *
      * @param string $locator button id, value or alt
      *
@@ -117,12 +99,12 @@ abstract class TraversableElement extends Element
     public function findButton($locator)
     {
         return $this->find('named', array(
-            'button', $this->getSession()->getSelectorsHandler()->xpathLiteral($locator)
+            'button', $this->getSelectorsHandler()->xpathLiteral($locator)
         ));
     }
 
     /**
-     * Presses button (input[type=submit|image|button], button) with specified locator.
+     * Presses button (input[type=submit|image|button|reset], button) with specified locator.
      *
      * @param string $locator button id, value or alt
      *
@@ -133,16 +115,14 @@ abstract class TraversableElement extends Element
         $button = $this->findButton($locator);
 
         if (null === $button) {
-            throw new ElementNotFoundException(
-                $this->getSession(), 'button', 'id|name|title|alt|value', $locator
-            );
+            throw $this->elementNotFound('button', 'id|name|title|alt|value', $locator);
         }
 
         $button->press();
     }
 
     /**
-     * Checks whether document has a field (input, textarea, select) with specified locator.
+     * Checks whether element has a field (input, textarea, select) with specified locator.
      *
      * @param string $locator input id, name or label
      *
@@ -163,7 +143,7 @@ abstract class TraversableElement extends Element
     public function findField($locator)
     {
         return $this->find('named', array(
-            'field', $this->getSession()->getSelectorsHandler()->xpathLiteral($locator)
+            'field', $this->getSelectorsHandler()->xpathLiteral($locator)
         ));
     }
 
@@ -174,26 +154,28 @@ abstract class TraversableElement extends Element
      * @param string $value   value
      *
      * @throws ElementNotFoundException
+     *
+     * @see NodeElement::setValue
      */
     public function fillField($locator, $value)
     {
         $field = $this->findField($locator);
 
         if (null === $field) {
-            throw new ElementNotFoundException(
-                $this->getSession(), 'form field', 'id|name|label|value', $locator
-            );
+            throw $this->elementNotFound('form field', 'id|name|label|value', $locator);
         }
 
         $field->setValue($value);
     }
 
     /**
-     * Checks whether document has a checkbox with specified locator, which is checked.
+     * Checks whether element has a checkbox with specified locator, which is checked.
      *
      * @param string $locator input id, name or label
      *
      * @return Boolean
+     *
+     * @see NodeElement::isChecked
      */
     public function hasCheckedField($locator)
     {
@@ -203,11 +185,13 @@ abstract class TraversableElement extends Element
     }
 
     /**
-     * Checks whether document has a checkbox with specified locator, which is unchecked.
+     * Checks whether element has a checkbox with specified locator, which is unchecked.
      *
      * @param string $locator input id, name or label
      *
      * @return Boolean
+     *
+     * @see NodeElement::isChecked
      */
     public function hasUncheckedField($locator)
     {
@@ -228,9 +212,7 @@ abstract class TraversableElement extends Element
         $field = $this->findField($locator);
 
         if (null === $field) {
-            throw new ElementNotFoundException(
-                $this->getSession(), 'form field', 'id|name|label|value', $locator
-            );
+            throw $this->elementNotFound('form field', 'id|name|label|value', $locator);
         }
 
         $field->check();
@@ -248,16 +230,14 @@ abstract class TraversableElement extends Element
         $field = $this->findField($locator);
 
         if (null === $field) {
-            throw new ElementNotFoundException(
-                $this->getSession(), 'form field', 'id|name|label|value', $locator
-            );
+            throw $this->elementNotFound('form field', 'id|name|label|value', $locator);
         }
 
         $field->uncheck();
     }
 
     /**
-     * Checks whether document has a select field with specified locator.
+     * Checks whether element has a select field with specified locator.
      *
      * @param string $locator select id, name or label
      *
@@ -266,7 +246,7 @@ abstract class TraversableElement extends Element
     public function hasSelect($locator)
     {
         return $this->has('named', array(
-            'select', $this->getSession()->getSelectorsHandler()->xpathLiteral($locator)
+            'select', $this->getSelectorsHandler()->xpathLiteral($locator)
         ));
     }
 
@@ -278,22 +258,22 @@ abstract class TraversableElement extends Element
      * @param Boolean $multiple select multiple options
      *
      * @throws ElementNotFoundException
+     *
+     * @see NodeElement::selectOption
      */
     public function selectFieldOption($locator, $value, $multiple = false)
     {
         $field = $this->findField($locator);
 
         if (null === $field) {
-            throw new ElementNotFoundException(
-                $this->getSession(), 'form field', 'id|name|label|value', $locator
-            );
+            throw $this->elementNotFound('form field', 'id|name|label|value', $locator);
         }
 
         $field->selectOption($value, $multiple);
     }
 
     /**
-     * Checks whether document has a table with specified locator.
+     * Checks whether element has a table with specified locator.
      *
      * @param string $locator table id or caption
      *
@@ -302,7 +282,7 @@ abstract class TraversableElement extends Element
     public function hasTable($locator)
     {
         return $this->has('named', array(
-            'table', $this->getSession()->getSelectorsHandler()->xpathLiteral($locator)
+            'table', $this->getSelectorsHandler()->xpathLiteral($locator)
         ));
     }
 
@@ -313,15 +293,15 @@ abstract class TraversableElement extends Element
      * @param string $path    path to file
      *
      * @throws ElementNotFoundException
+     *
+     * @see NodeElement::attachFile
      */
     public function attachFileToField($locator, $path)
     {
         $field = $this->findField($locator);
 
         if (null === $field) {
-            throw new ElementNotFoundException(
-                $this->getSession(), 'form field', 'id|name|label|value', $locator
-            );
+            throw $this->elementNotFound('form field', 'id|name|label|value', $locator);
         }
 
         $field->attachFile($path);

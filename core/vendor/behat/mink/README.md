@@ -1,9 +1,14 @@
 Mink
 ====
+[![Latest Stable Version](https://poser.pugx.org/behat/mink/v/stable.svg)](https://packagist.org/packages/behat/mink)
+[![Latest Unstable Version](https://poser.pugx.org/behat/mink/v/unstable.svg)](https://packagist.org/packages/behat/mink)
+[![Total Downloads](https://poser.pugx.org/behat/mink/downloads.svg)](https://packagist.org/packages/behat/mink)
+[![Scrutinizer Quality Score](https://scrutinizer-ci.com/g/Behat/Mink/badges/quality-score.png?s=d4faf469d6b399df121deed6070390800722ada0)](https://scrutinizer-ci.com/g/Behat/Mink/)
+[![Code Coverage](https://scrutinizer-ci.com/g/Behat/Mink/badges/coverage.png?s=88ab1cee4e131f4ef595f17ae4837001ef2aec3b)](https://scrutinizer-ci.com/g/Behat/Mink/)
+[![Build Status](https://travis-ci.org/Behat/Mink.svg?branch=master)](https://travis-ci.org/Behat/Mink)
+[![SensioLabsInsight](https://insight.sensiolabs.com/projects/5bb8fab0-978f-428a-ae23-44ee4e129fbc/mini.png)](https://insight.sensiolabs.com/projects/5bb8fab0-978f-428a-ae23-44ee4e129fbc)
+[![License](https://poser.pugx.org/behat/mink/license.svg)](https://packagist.org/packages/behat/mink)
 
-- [stable (master)](https://github.com/Behat/Mink) ([![Master Build
-Status](https://secure.travis-ci.org/Behat/Mink.png?branch=master)](http://travis-ci.org/Behat/Mink)) - staging branch. Last stable version.
-- [development (develop)](https://github.com/Behat/Mink/tree/develop) ([![Develop Build Status](https://secure.travis-ci.org/Behat/Mink.png?branch=develop)](http://travis-ci.org/Behat/Mink)) - development branch. Development happens here and you should send your PRs here too.
 
 Useful Links
 ------------
@@ -37,7 +42,7 @@ $mink = new Mink(array(
 $mink->setDefaultSessionName('goutte2');
 
 // visit a page
-$mink->visit($startUrl);
+$mink->getSession()->visit($startUrl);
 
 // call to getSession() without argument will always return a default session if has one (goutte2 here)
 $mink->getSession()->getPage()->findLink('Downloads')->click();
@@ -56,7 +61,7 @@ Install Dependencies
 --------------------
 
 ``` bash
-$> curl http://getcomposer.org/installer | php
+$> curl -sS https://getcomposer.org/installer | php
 $> php composer.phar install
 ```
 

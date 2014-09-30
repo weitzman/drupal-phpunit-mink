@@ -1,14 +1,14 @@
 <?php
 
-namespace Behat\Mink\Element;
-
 /*
- * This file is part of the Behat\Mink.
+ * This file is part of the Mink package.
  * (c) Konstantin Kudryashov <ever.zet@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
+namespace Behat\Mink\Element;
 
 /**
  * Document element.
@@ -34,7 +34,7 @@ class DocumentElement extends TraversableElement
      */
     public function getContent()
     {
-        return trim($this->getSession()->getDriver()->getContent());
+        return trim($this->getDriver()->getContent());
     }
 
     /**
@@ -47,7 +47,7 @@ class DocumentElement extends TraversableElement
     public function hasContent($content)
     {
         return $this->has('named', array(
-            'content', $this->getSession()->getSelectorsHandler()->xpathLiteral($content)
+            'content', $this->getSelectorsHandler()->xpathLiteral($content)
         ));
     }
 }

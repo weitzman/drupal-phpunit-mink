@@ -1,23 +1,23 @@
 <?php
 
-namespace Behat\Mink\Exception;
-
-use Behat\Mink\Session;
-
 /*
- * This file is part of the Behat\Mink.
+ * This file is part of the Mink package.
  * (c) Konstantin Kudryashov <ever.zet@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
+namespace Behat\Mink\Exception;
+
+use Behat\Mink\Session;
+
 /**
- * Mink "element not found" exception.
+ * Exception thrown when an expected element is not found.
  *
  * @author Konstantin Kudryashov <ever.zet@gmail.com>
  */
-class ElementNotFoundException extends Exception
+class ElementNotFoundException extends ExpectationException
 {
     /**
      * Initializes exception.
@@ -43,32 +43,11 @@ class ElementNotFoundException extends Exception
             } else {
                 $selector = 'with '.$selector;
             }
-            $message .= ' '.$selector.' "' . $locator . '" ';
+            $message .= ' '.$selector.' "' . $locator . '"';
         }
 
-        $message .= 'not found.';
+        $message .= ' not found.';
 
         parent::__construct($message, $session);
-    }
-
-    /**
-     * Returns exception message with additional context info.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        try {
-            $pageText = $this->trimBody($this->getSession()->getPage()->getContent());
-            $string   = sprintf("%s\n\n%s%s",
-                $this->getMessage(),
-                $this->getResponseInfo(),
-                $this->pipeString($pageText."\n")
-            );
-        } catch (\Exception $e) {
-            return $this->getMessage();
-        }
-
-        return $string;
     }
 }

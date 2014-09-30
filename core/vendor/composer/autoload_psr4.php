@@ -8,8 +8,8 @@ $baseDir = dirname(dirname($vendorDir));
 return array(
     'GuzzleHttp\\Stream\\' => array($vendorDir . '/guzzlehttp/streams/src'),
     'GuzzleHttp\\' => array($vendorDir . '/guzzlehttp/guzzle/src'),
+    'Drupal\\simpletest\\RemoteCoverage\\' => array($baseDir . '/core/modules/simpletest/src/RemoteCoverage'),
     'Drupal\\Driver\\' => array($baseDir . '/drivers/lib/Drupal/Driver'),
     'Drupal\\Core\\' => array($baseDir . '/core/lib/Drupal/Core'),
     'Drupal\\Component\\' => array($baseDir . '/core/lib/Drupal/Component'),
-    'Drupal\\simpletest\\RemoteCoverage\\' => array($baseDir . '/core/modules/simpletest/src/RemoteCoverage'),
 );
