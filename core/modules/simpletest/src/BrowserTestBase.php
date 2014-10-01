@@ -974,7 +974,6 @@ abstract class BrowserTestBase extends RunnerTestBase {
       $this->testId = get_class($this) . '__' . $this->getName();
 
       $session = $this->getSession();
-      $session->setCookie(RemoteCoverageTool::TEST_ID_VARIABLE, NULL);
       $session->setCookie(RemoteCoverageTool::TEST_ID_VARIABLE, $this->testId);
     }
 
