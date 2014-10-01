@@ -2901,28 +2901,35 @@
         "version_normalized": "9999999-dev",
         "source": {
             "type": "git",
-            "url": "https://github.com/larowlan/MinkGoutteDriver.git",
-            "reference": "488f7f02b1e907888f4b156b635693daf51d760c"
+            "url": "https://github.com/Behat/MinkGoutteDriver.git",
+            "reference": "20156bd0a87e59bce104b35c3ffc2c03e98474ed"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/Behat/MinkGoutteDriver/zipball/20156bd0a87e59bce104b35c3ffc2c03e98474ed",
+            "reference": "20156bd0a87e59bce104b35c3ffc2c03e98474ed",
+            "shasum": ""
         },
         "require": {
-            "behat/mink": "~1.5@dev",
-            "behat/mink-browserkit-driver": "~1.1@dev",
-            "fabpot/goutte": "dev-master",
-            "php": ">=5.4"
+            "behat/mink": "~1.6@dev",
+            "behat/mink-browserkit-driver": "~1.2@dev",
+            "fabpot/goutte": "~1.0.4|~2.0",
+            "php": ">=5.3.1"
         },
-        "time": "2014-06-04 04:29:46",
+        "time": "2014-08-30 01:14:27",
         "type": "mink-driver",
         "extra": {
             "branch-alias": {
-                "dev-master": "2.0.x-dev"
+                "dev-master": "1.1.x-dev"
             }
         },
-        "installation-source": "source",
+        "installation-source": "dist",
         "autoload": {
             "psr-0": {
                 "Behat\\Mink\\Driver": "src/"
             }
         },
+        "notification-url": "https://packagist.org/downloads/",
         "license": [
             "MIT"
         ],

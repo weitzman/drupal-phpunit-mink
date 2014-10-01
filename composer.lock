@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "47cd108698c89c28e6097826d96203a0",
+    "hash": "dd2bfe3ef8fcab3e069199e11c1f6500",
     "packages": [
         {
             "name": "behat/mink",
@@ -121,19 +121,25 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/larowlan/MinkGoutteDriver.git",
-                "reference": "488f7f02b1e907888f4b156b635693daf51d760c"
+                "url": "https://github.com/Behat/MinkGoutteDriver.git",
+                "reference": "20156bd0a87e59bce104b35c3ffc2c03e98474ed"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Behat/MinkGoutteDriver/zipball/20156bd0a87e59bce104b35c3ffc2c03e98474ed",
+                "reference": "20156bd0a87e59bce104b35c3ffc2c03e98474ed",
+                "shasum": ""
             },
             "require": {
-                "behat/mink": "~1.5@dev",
-                "behat/mink-browserkit-driver": "~1.1@dev",
-                "fabpot/goutte": "dev-master",
-                "php": ">=5.4"
+                "behat/mink": "~1.6@dev",
+                "behat/mink-browserkit-driver": "~1.2@dev",
+                "fabpot/goutte": "~1.0.4|~2.0",
+                "php": ">=5.3.1"
             },
             "type": "mink-driver",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "2.0.x-dev"
+                    "dev-master": "1.1.x-dev"
                 }
             },
             "autoload": {
@@ -141,6 +147,7 @@
                     "Behat\\Mink\\Driver": "src/"
                 }
             },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -159,7 +166,7 @@
                 "headless",
                 "testing"
             ],
-            "time": "2014-06-04 04:35:02"
+            "time": "2014-08-30 01:14:27"
         },
         {
             "name": "doctrine/annotations",

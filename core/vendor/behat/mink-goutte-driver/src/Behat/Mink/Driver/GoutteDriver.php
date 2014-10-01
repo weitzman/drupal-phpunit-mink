@@ -10,7 +10,8 @@
 
 namespace Behat\Mink\Driver;
 
-use Behat\Mink\Driver\Goutte\Client;
+use Behat\Mink\Driver\Goutte\Client as ExtendedClient;
+use Goutte\Client;
 
 /**
  * Goutte driver.
@@ -22,49 +23,50 @@ class GoutteDriver extends BrowserKitDriver
     /**
      * Initializes Goutte driver.
      *
-     * @param Client $client HttpKernel client instance
+     * @param Client $client Goutte client instance
      */
     public function __construct(Client $client = null)
     {
-        parent::__construct($client ?: new Client());
+        parent::__construct($client ?: new ExtendedClient());
     }
 
     /**
-     * Sets HTTP Basic authentication parameters
-     *
-     * @param string|Boolean $user     user name or false to disable authentication
-     * @param string         $password password
+     * {@inheritdoc}
      */
     public function setBasicAuth($user, $password)
     {
-        if ($user) {
-            $this->getClient()->setAuth($user, $password);
-        } else {
+        if (false === $user) {
             $this->getClient()->resetAuth();
+
+            return;
         }
+
+        $this->getClient()->setAuth($user, $password);
     }
 
     /**
-     * Sets specific request header on client.
+     * Gets the Goutte client.
      *
-     * @param string $name
-     * @param string $value
+     * The method is overwritten only to provide the appropriate return type hint.
+     *
+     * @return Client
      */
-    public function setRequestHeader($name, $value)
+    public function getClient()
     {
-        if ($value) {
-            $this->getClient()->setHeader($name, $value);
-        } else {
-            $this->getClient()->removeHeader($name);
-        }
+        return parent::getClient();
     }
 
     /**
-     * Prepares URL for visiting.
-     *
-     * @param string $url
-     *
-     * @return string
+     * {@inheritdoc}
+     */
+    public function reset()
+    {
+        parent::reset();
+        $this->getClient()->resetAuth();
+    }
+
+    /**
+     * {@inheritdoc}
      */
     protected function prepareUrl($url)
     {

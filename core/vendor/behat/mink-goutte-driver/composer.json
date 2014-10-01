@@ -15,10 +15,10 @@
     ],
 
     "require": {
-        "php":                           ">=5.4",
-        "behat/mink":                    "~1.5@dev",
-        "behat/mink-browserkit-driver":  "~1.1@dev",
-        "fabpot/goutte":                 "dev-master"
+        "php":                           ">=5.3.1",
+        "behat/mink":                    "~1.6@dev",
+        "behat/mink-browserkit-driver":  "~1.2@dev",
+        "fabpot/goutte":                 "~1.0.4|~2.0"
     },
 
     "autoload": {
@@ -27,9 +27,15 @@
         }
     },
 
+    "autoload-dev": {
+        "psr-4": {
+            "Behat\\Mink\\Tests\\Driver\\": "tests"
+        }
+    },
+
     "extra": {
         "branch-alias": {
-            "dev-master": "2.0.x-dev"
+            "dev-master": "1.1.x-dev"
         }
     }
 }
