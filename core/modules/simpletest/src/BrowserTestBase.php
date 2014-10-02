@@ -32,13 +32,6 @@ abstract class BrowserTestBase extends RunnerTestBase {
   protected $mink;
 
   /**
-   * Indicates that headers should be dumped if verbose output is enabled.
-   *
-   * @var bool
-   */
-  protected $dumpHeaders = FALSE;
-
-  /**
    * Remote coverage helper.
    *
    * @var RemoteCoverageHelper
@@ -262,7 +255,7 @@ abstract class BrowserTestBase extends RunnerTestBase {
     }
     $result = $role->save();
 
-    $this->assertIdentical($result, SAVED_NEW, String::format('Created role ID @rid with name @name.', array(
+    $this->assertSame($result, SAVED_NEW, String::format('Created role ID @rid with name @name.', array(
       '@name' => var_export($role->label(), TRUE),
       '@rid' => var_export($role->id(), TRUE),
     )), 'Role');
@@ -273,10 +266,7 @@ abstract class BrowserTestBase extends RunnerTestBase {
         user_role_grant_permissions($role->id(), $permissions);
         $assigned_permissions = entity_load('user_role', $role->id())->getPermissions();
         $missing_permissions = array_diff($permissions, $assigned_permissions);
-        if (!$missing_permissions) {
-          $this->pass(String::format('Created permissions: @perms', array('@perms' => implode(', ', $permissions))), 'Role');
-        }
-        else {
+        if ($missing_permissions) {
           $this->fail(String::format('Failed to create permissions: @perms', array('@perms' => implode(', ', $missing_permissions))), 'Role');
         }
       }
@@ -285,6 +275,56 @@ abstract class BrowserTestBase extends RunnerTestBase {
     else {
       return FALSE;
     }
+  }
+
+  /**
+   * Generates a unique random string containing letters and numbers.
+   *
+   * Do not use this method when testing unvalidated user input. Instead, use
+   * \Drupal\simpletest\TestBase::randomString().
+   *
+   * @param int $length
+   *   Length of random string to generate.
+   *
+   * @return string
+   *   Randomly generated unique string.
+   *
+   * @see \Drupal\Component\Utility\Random::name()
+   */
+  public function randomMachineName($length = 8) {
+    return $this->getRandomGenerator()->name($length, TRUE);
+  }
+
+  /**
+   * Generates a pseudo-random string of ASCII characters of codes 32 to 126.
+   *
+   * Do not use this method when special characters are not possible (e.g., in
+   * machine or file names that have already been validated); instead, use
+   * \Drupal\simpletest\TestBase::randomMachineName(). If $length is greater
+   * than 2 the random string will include at least one ampersand ('&')
+   * character to ensure coverage for special characters and avoid the
+   * introduction of random test failures.
+   *
+   * @param int $length
+   *   Length of random string to generate.
+   *
+   * @return string
+   *   Pseudo-randomly generated unique string including special characters.
+   *
+   * @see \Drupal\Component\Utility\Random::string()
+   */
+  public function randomString($length = 8) {
+    if ($length < 3) {
+      return $this->getRandomGenerator()->string($length, TRUE, array($this, 'randomStringValidate'));
+    }
+
+    // To prevent the introduction of random test failures, ensure that the
+    // returned string contains a character that needs to be escaped in HTML by
+    // injecting an ampersand into it.
+    $replacement_pos = floor($length / 2);
+    // Remove 1 from the length to account for the ampersand character.
+    $string = $this->getRandomGenerator()->string($length - 1, TRUE, array($this, 'randomStringValidate'));
+    return substr_replace($string, '&', $replacement_pos, 0);
   }
 
   /**
