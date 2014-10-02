@@ -32,10 +32,10 @@ class BrowserTestBaseTest extends BrowserTestBase {
     $this->drupalGet('/simpletest/hello');
 
     // Test response code.
-    $this->assertResponseStatus(200);
+    $this->assertSession()->statusCodeEquals(200);
 
     // Test page contains some text.
-    $this->assertPageTextContains('Hello Amsterdam');
+    $this->assertSession()->pageTextContains('Hello Amsterdam');
   }
 
   /**
