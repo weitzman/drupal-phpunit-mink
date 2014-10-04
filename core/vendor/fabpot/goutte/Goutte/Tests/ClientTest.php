@@ -122,8 +122,8 @@ class ClientTest extends \PHPUnit_Framework_TestCase
         $files = array(
             'test' => array(
                 'name' => 'test.txt',
-                'tmp_name' => __FILE__
-            )
+                'tmp_name' => __FILE__,
+            ),
         );
 
         $crawler = $client->request('POST', 'http://www.example.com/', array(), $files);
@@ -142,7 +142,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
         $client = new Client();
         $client->setClient($guzzle);
         $files = array(
-            'test' => __FILE__
+            'test' => __FILE__,
         );
 
         $crawler = $client->request('POST', 'http://www.example.com/', array(), $files);
@@ -163,7 +163,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
             'form' => array(
                 'test' => array(
                     'name' => 'test.txt',
-                    'tmp_name' => __FILE__
+                    'tmp_name' => __FILE__,
                 ),
             ),
         );
@@ -231,7 +231,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase
 
         $this->mock->clearQueue();
         $this->mock->addResponse(new GuzzleResponse(301, array(
-            'Location' => 'http://www.example.com/'
+            'Location' => 'http://www.example.com/',
         )));
         $this->mock->addResponse(new GuzzleResponse(200, [], Stream::factory('<html><body><p>Test</p></body></html>')));
 
@@ -280,7 +280,16 @@ class ClientTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertEquals($postFile->getName(), $fieldName);
         $this->assertEquals($postFile->getFilename(), $fileName);
-        $this->assertEquals($postFile->getHeaders(), $headers);
+
+        $postFileHeaders = $postFile->getHeaders();
+
+        // Note: Sort 'Content-Disposition' values before comparing, because the order changed in Guzzle 4.2.2
+        $postFileHeaders['Content-Disposition'] = explode('; ', $postFileHeaders['Content-Disposition']);
+        sort($postFileHeaders['Content-Disposition']);
+        $headers['Content-Disposition'] = explode('; ', $headers['Content-Disposition']);
+        sort($headers['Content-Disposition']);
+
+        $this->assertEquals($postFileHeaders, $headers);
     }
 
     public function testHttps()
@@ -301,11 +310,10 @@ class ClientTest extends \PHPUnit_Framework_TestCase
         $guzzle = $this->getGuzzle();
         $client = new Client([
           'HTTP_HOST' => '1.2.3.4',
-          'HTTP_USER_AGENT' => 'SomeHost'
+          'HTTP_USER_AGENT' => 'SomeHost',
         ]);
         $client->setClient($guzzle);
         $crawler = $client->request('GET', 'http://www.example.com/');
         $this->assertEquals('SomeHost', $this->history->getLastRequest()->getHeader('User-Agent'));
     }
-
 }
