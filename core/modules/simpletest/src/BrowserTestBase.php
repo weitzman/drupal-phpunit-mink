@@ -618,8 +618,8 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     $assertSession = $this->assertSession();
     $this->drupalGet('user/logout', array('query' => array('destination' => 'user')));
     $assertSession->statusCodeEquals(200);
-    $assertSession->fieldExists('name', 'Username field found.');
-    $assertSession->fieldExists('pass', 'Password field found.');
+    $assertSession->fieldExists('name');
+    $assertSession->fieldExists('pass');
 
     // @see WebTestBase::drupalUserIsLoggedIn()
     unset($this->loggedInUser->session_id);
@@ -651,7 +651,6 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    *   underscores.
    */
   protected function submitForm($edit, $submit, $form_html_id = NULL) {
-    $session = $this->getSession();
     $assertSession = $this->assertSession();
 
     // Get the form.
