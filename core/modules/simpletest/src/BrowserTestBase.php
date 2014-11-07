@@ -189,6 +189,34 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
   }
 
   /**
+   * Initializes mink sessions.
+   */
+  protected function initMink() {
+    $driver = new GoutteDriver();
+    $session = new Session($driver);
+    $this->mink = new Mink();
+    $this->mink->registerSession('goutte', $session);
+    $this->mink->setDefaultSessionName('goutte');
+    $this->registerSessions();
+    return $session;
+  }
+
+  /**
+   * Registers additional mink sessions.
+   *
+   * Tests wishing to use a different driver or change the default driver should
+   * override this method.
+   *
+   * @code
+   *   // Register a new session that uses the MinkPonyDriver.
+   *   $pony = new MinkPonyDriver();
+   *   $session = new Session($pony);
+   *   $this->mink->registerSession('pony', $session);
+   * @endcode
+   */
+  protected function registerSessions() {}
+
+  /**
    * {@inheritdoc}
    */
   public function setUp() {
@@ -206,11 +234,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     $this->installDrupal();
 
     // Setup Mink.
-    $driver = new GoutteDriver();
-    $session = new Session($driver);
-    $this->mink = new Mink();
-    $this->mink->registerSession('goutte', $session);
-    $this->mink->setDefaultSessionName('goutte');
+    $session = $this->initMink();
 
     // In order to debug web tests you need to either set a cookie, have the
     // Xdebug session in the URL or set an environment variable in case of CLI
@@ -253,7 +277,9 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     // Ensure that internal logged in variable is reset.
     $this->loggedInUser = FALSE;
 
-    $this->mink->stopSessions();
+    if ($this->mink) {
+      $this->mink->stopSessions();
+    }
   }
 
   /**
