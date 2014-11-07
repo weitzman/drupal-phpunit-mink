@@ -530,10 +530,7 @@ function simpletest_script_execute_batch($test_classes) {
       // Process phpunit web-tests next as they are faster.
       if (is_subclass_of($test_class, 'Drupal\simpletest\BrowserTestBase')) {
         putenv('DOMAIN=' . $_SERVER['HTTP_HOST']);
-        simpletest_script_run_phpunit($test_id, $test_class, array(
-          '--debug',
-          '--testsuite functional'
-        ));
+        simpletest_script_run_phpunit($test_id, $test_class);
         continue;
       }
 
