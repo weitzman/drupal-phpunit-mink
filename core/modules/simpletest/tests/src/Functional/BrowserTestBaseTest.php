@@ -42,7 +42,20 @@ class BrowserTestBaseTest extends BrowserTestBase {
    * Tests basic form functionality.
    */
   public function testForm() {
-    $this->drupalGet('');
+    $this->drupalGet('/simpletest/example-form');
+
+    // Ensure the proper response code for a _form route.
+    $this->assertSession()->statusCodeEquals(200);
+
+    // Ensure the form and text field exist.
+    $this->assertSession()->elementExists('css', 'form#example-form');
+    $this->assertSession()->fieldExists('name');
+
+    $edit = ['name' => 'Foobaz'];
+    $this->submitForm($edit, 'Save configuration', 'example-form');
+
+    $this->drupalGet('/simpletest/example-form');
+    $this->assertSession()->fieldValueEquals('name', 'Foobaz');
   }
 
 }
