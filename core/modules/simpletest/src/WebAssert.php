@@ -1,20 +1,33 @@
 <?php
+
+/**
+ * @file
+ * Contains \Drupal\simpletest\WebAssert.
+ */
+
 namespace Drupal\simpletest;
 
-use Behat\Mink\Element\NodeElement;
 use Behat\Mink\Element\TraversableElement;
 use Behat\Mink\Exception\ElementNotFoundException;
 
+/**
+ * Defines a class with methods for asserting presence of elements during tests.
+ */
 class WebAssert extends \Behat\Mink\WebAssert {
+
   /**
    * Checks that specific field exists on the current page.
    *
-   * @param string $button button id|name|label|value
-   * @param TraversableElement $container document to check against
+   * @param string $button
+   *   One of id|name|label|value for the button.
+   * @param \Behat\Mink\Element\TraversableElement $container
+   *   The document to check against.
    *
-   * @return NodeElement
+   * @return \Behat\Mink\Element\NodeElement
+   *   The matching element.
    *
-   * @throws ElementNotFoundException
+   * @throws \Behat\Mink\Exception\ElementNotFoundException
+   *   When the element doesn't exist.
    */
   public function buttonExists($button, TraversableElement $container = NULL) {
     $container = $container ?: $this->session->getPage();
@@ -30,17 +43,22 @@ class WebAssert extends \Behat\Mink\WebAssert {
   /**
    * Checks that specific field exists on the current page.
    *
-   * @param string $select select id|name|label|value
-   * @param TraversableElement $container document to check against
+   * @param string $select
+   *   One of id|name|label|value for the select field.
+   * @param \Behat\Mink\Element\TraversableElement $container
+   *   The document to check against.
    *
-   * @return NodeElement
+   * @return \Behat\Mink\Element\NodeElement
+   *   The matching element
    *
-   * @throws ElementNotFoundException
+   * @throws \Behat\Mink\Exception\ElementNotFoundException
+   *   When the element doesn't exist.
    */
   public function selectExists($select, TraversableElement $container = NULL) {
     $container = $container ?: $this->session->getPage();
     $node = $container->find('named', array(
-      'select', $this->session->getSelectorsHandler()->xpathLiteral($select)
+      'select',
+      $this->session->getSelectorsHandler()->xpathLiteral($select),
     ));
 
     if (NULL === $node) {
