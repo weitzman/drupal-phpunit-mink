@@ -527,6 +527,16 @@ function simpletest_script_execute_batch($test_classes) {
         continue;
       }
 
+      // Process phpunit web-tests next as they are faster.
+      if (is_subclass_of($test_class, 'Drupal\simpletest\BrowserTestBase')) {
+        putenv('DOMAIN=' . $_SERVER['HTTP_HOST']);
+        simpletest_script_run_phpunit($test_id, $test_class, array(
+          '--debug',
+          '--testsuite functional'
+        ));
+        continue;
+      }
+
       // Fork a child process.
       $command = simpletest_script_command($test_id, $test_class);
       $process = proc_open($command, array(), $pipes, NULL, NULL, array('bypass_shell' => TRUE));
@@ -580,8 +590,8 @@ function simpletest_script_execute_batch($test_classes) {
 /**
  * Run a group of phpunit tests.
  */
-function simpletest_script_run_phpunit($test_id, $class) {
-  $results = simpletest_run_phpunit_tests($test_id, array($class));
+function simpletest_script_run_phpunit($test_id, $class, $additional_arguments = array()) {
+  $results = simpletest_run_phpunit_tests($test_id, array($class), $additional_arguments);
   simpletest_process_phpunit_results($results);
 
   // Map phpunit results to a data structure we can pass to
