@@ -1037,12 +1037,10 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    */
   protected function prepareEnvironment() {
     // Bootstrap Drupal so we can use Drupal's built in functions.
-    if (!getenv('SIMPLETEST_RUNNER')) {
-      $this->classLoader = require __DIR__ . '/../../../vendor/autoload.php';
-      $request = Request::createFromGlobals();
-      $kernel = TestRunnerKernel::createFromRequest($request, $this->classLoader);
-      $kernel->prepareLegacyRequest($request);
-    }
+    $this->classLoader = require __DIR__ . '/../../../vendor/autoload.php';
+    $request = Request::createFromGlobals();
+    $kernel = TestRunnerKernel::createFromRequest($request, $this->classLoader);
+    $kernel->prepareLegacyRequest($request);
     $this->prepareDatabasePrefix();
 
     // Create test directory ahead of installation so fatal errors and debug

@@ -533,7 +533,6 @@ function simpletest_script_execute_batch($test_classes) {
         simpletest_script_run_phpunit($test_id, $test_class, array(
           '--debug',
           '--testsuite functional'
-          '-c core',
         ));
         continue;
       }
