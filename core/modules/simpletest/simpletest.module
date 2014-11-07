@@ -168,17 +168,19 @@ function simpletest_run_tests($test_list) {
  *
  * @param $test_id
  *   The current test ID.
- * @param $unescaped_test_classnames
+ * @param array $unescaped_test_classnames
  *   An array of test class names, including full namespaces, to be passed as
  *   a regular expression to PHPUnit's --filter option.
+ * @param array $additional_arguments
+ *   (optional) An array of additional arguments.
  *
  * @return array
  *   The parsed results of PHPUnit's JUnit XML output, in the format of
  *   {simpletest}'s schema.
  */
-function simpletest_run_phpunit_tests($test_id, array $unescaped_test_classnames) {
+function simpletest_run_phpunit_tests($test_id, array $unescaped_test_classnames, $additional_arguments) {
   $phpunit_file = simpletest_phpunit_xml_filepath($test_id);
-  simpletest_phpunit_run_command($unescaped_test_classnames, $phpunit_file);
+  simpletest_phpunit_run_command($unescaped_test_classnames, $phpunit_file, $additional_arguments);
   return simpletest_phpunit_xml_to_rows($test_id, $phpunit_file);
 }
 
@@ -233,18 +235,20 @@ function simpletest_phpunit_configuration_filepath() {
  *   a regular expression to PHPUnit's --filter option.
  * @param string $phpunit_file
  *   A filepath to use for PHPUnit's --log-junit option.
+ * @param array $additional_arguments
+ *   (optional) Additional arguments to pass to the command.
  *
  * @return string
  *  The results as returned by exec().
  */
-function simpletest_phpunit_run_command(array $unescaped_test_classnames, $phpunit_file) {
+function simpletest_phpunit_run_command(array $unescaped_test_classnames, $phpunit_file, $additional_arguments = array()) {
   $phpunit_bin = simpletest_phpunit_command();
 
   $command = array(
     $phpunit_bin,
     '--log-junit',
     escapeshellarg($phpunit_file),
-  );
+  ) + $additional_arguments;
 
   // Optimized for running a single test.
   if (count($unescaped_test_classnames) == 1) {
