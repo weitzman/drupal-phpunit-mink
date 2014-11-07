@@ -10,6 +10,7 @@ namespace Drupal\views\Plugin\views\field;
 use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\Unicode;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Component\Utility\Xss;
 use Drupal\Core\Form\FormStateInterface;
@@ -85,6 +86,13 @@ abstract class FieldPluginBase extends HandlerBase {
    * The generated aliases are stored in $aliases.
    */
   var $additional_fields = array();
+
+  /**
+   * The link generator.
+   *
+   * @var \Drupal\Core\Utility\LinkGeneratorInterface
+   */
+  protected $linkGenerator;
 
   /**
    * Overrides Drupal\views\Plugin\views\HandlerBase::init().
@@ -428,42 +436,42 @@ abstract class FieldPluginBase extends HandlerBase {
   protected function defineOptions() {
     $options = parent::defineOptions();
 
-    $options['label'] = array('default' => '', 'translatable' => TRUE);
+    $options['label'] = array('default' => '');
     // Some styles (for example table) should have labels enabled by default.
     $style = $this->view->getStyle();
     if (isset($style) && $style->defaultFieldLabels()) {
       $options['label']['default'] = $this->definition['title'];
     }
 
-    $options['exclude'] = array('default' => FALSE, 'bool' => TRUE);
+    $options['exclude'] = array('default' => FALSE);
     $options['alter'] = array(
       'contains' => array(
-        'alter_text' => array('default' => FALSE, 'bool' => TRUE),
-        'text' => array('default' => '', 'translatable' => TRUE),
-        'make_link' => array('default' => FALSE, 'bool' => TRUE),
+        'alter_text' => array('default' => FALSE),
+        'text' => array('default' => ''),
+        'make_link' => array('default' => FALSE),
         'path' => array('default' => ''),
-        'absolute' => array('default' => FALSE, 'bool' => TRUE),
-        'external' => array('default' => FALSE, 'bool' => TRUE),
-        'replace_spaces' => array('default' => FALSE, 'bool' => TRUE),
-        'path_case' => array('default' => 'none', 'translatable' => FALSE),
-        'trim_whitespace' => array('default' => FALSE, 'bool' => TRUE),
-        'alt' => array('default' => '', 'translatable' => TRUE),
+        'absolute' => array('default' => FALSE),
+        'external' => array('default' => FALSE),
+        'replace_spaces' => array('default' => FALSE),
+        'path_case' => array('default' => 'none'),
+        'trim_whitespace' => array('default' => FALSE),
+        'alt' => array('default' => ''),
         'rel' => array('default' => ''),
         'link_class' => array('default' => ''),
-        'prefix' => array('default' => '', 'translatable' => TRUE),
-        'suffix' => array('default' => '', 'translatable' => TRUE),
+        'prefix' => array('default' => ''),
+        'suffix' => array('default' => ''),
         'target' => array('default' => ''),
-        'nl2br' => array('default' => FALSE, 'bool' => TRUE),
+        'nl2br' => array('default' => FALSE),
         'max_length' => array('default' => ''),
-        'word_boundary' => array('default' => TRUE, 'bool' => TRUE),
-        'ellipsis' => array('default' => TRUE, 'bool' => TRUE),
-        'more_link' => array('default' => FALSE, 'bool' => TRUE),
-        'more_link_text' => array('default' => '', 'translatable' => TRUE),
+        'word_boundary' => array('default' => TRUE),
+        'ellipsis' => array('default' => TRUE),
+        'more_link' => array('default' => FALSE),
+        'more_link_text' => array('default' => ''),
         'more_link_path' => array('default' => ''),
-        'strip_tags' => array('default' => FALSE, 'bool' => TRUE),
-        'trim' => array('default' => FALSE, 'bool' => TRUE),
+        'strip_tags' => array('default' => FALSE),
+        'trim' => array('default' => FALSE),
         'preserve_tags' => array('default' => ''),
-        'html' => array('default' => FALSE, 'bool' => TRUE),
+        'html' => array('default' => FALSE),
       ),
     );
     $options['element_type'] = array('default' => '');
@@ -471,17 +479,17 @@ abstract class FieldPluginBase extends HandlerBase {
 
     $options['element_label_type'] = array('default' => '');
     $options['element_label_class'] = array('default' => '');
-    $options['element_label_colon'] = array('default' => TRUE, 'bool' => TRUE);
+    $options['element_label_colon'] = array('default' => TRUE);
 
     $options['element_wrapper_type'] = array('default' => '');
     $options['element_wrapper_class'] = array('default' => '');
 
-    $options['element_default_classes'] = array('default' => TRUE, 'bool' => TRUE);
+    $options['element_default_classes'] = array('default' => TRUE);
 
-    $options['empty'] = array('default' => '', 'translatable' => TRUE);
-    $options['hide_empty'] = array('default' => FALSE, 'bool' => TRUE);
-    $options['empty_zero'] = array('default' => FALSE, 'bool' => TRUE);
-    $options['hide_alter_empty'] = array('default' => TRUE, 'bool' => TRUE);
+    $options['empty'] = array('default' => '');
+    $options['hide_empty'] = array('default' => FALSE);
+    $options['empty_zero'] = array('default' => FALSE);
+    $options['hide_alter_empty'] = array('default' => TRUE);
 
     return $options;
   }
@@ -1275,13 +1283,13 @@ abstract class FieldPluginBase extends HandlerBase {
         $more_link_text = $this->options['alter']['more_link_text'] ? $this->options['alter']['more_link_text'] : $this->t('more');
         $more_link_text = strtr(Xss::filterAdmin($more_link_text), $tokens);
         $more_link_path = $this->options['alter']['more_link_path'];
-        $more_link_path = strip_tags(decode_entities(strtr($more_link_path, $tokens)));
+        $more_link_path = strip_tags(String::decodeEntities(strtr($more_link_path, $tokens)));
 
         // Make sure that paths which were run through _url() work as well.
         $base_path = base_path();
         // Checks whether the path starts with the base_path.
         if (strpos($more_link_path, $base_path) === 0) {
-          $more_link_path = drupal_substr($more_link_path, drupal_strlen($base_path));
+          $more_link_path = Unicode::substr($more_link_path, Unicode::strlen($base_path));
         }
 
         $more_link = _l($more_link_text, $more_link_path, array('attributes' => array('class' => array('views-more-link'))));
@@ -1344,6 +1352,10 @@ abstract class FieldPluginBase extends HandlerBase {
       'absolute' => !empty($alter['absolute']) ? TRUE : FALSE,
     );
 
+    $alter += [
+      'path' => NULL
+    ];
+
     // $path will be run through check_url() by _l() so we do not need to
     // sanitize it ourselves.
     $path = $alter['path'];
@@ -1353,7 +1365,7 @@ abstract class FieldPluginBase extends HandlerBase {
       // Use strip tags as there should never be HTML in the path.
       // However, we need to preserve special characters like " that
       // were removed by String::checkPlain().
-      $path = strip_tags(decode_entities(strtr($path, $tokens)));
+      $path = strip_tags(String::decodeEntities(strtr($path, $tokens)));
 
       if (!empty($alter['path_case']) && $alter['path_case'] != 'none') {
         $path = $this->caseTransform($path, $this->options['alter']['path_case']);
@@ -1375,7 +1387,7 @@ abstract class FieldPluginBase extends HandlerBase {
     // If the path is empty do not build a link around the given text and return
     // it as is.
     // http://www.example.com URLs will not have a $url['path'], so check host as well.
-    if (empty($url['path']) && empty($url['host']) && empty($url['fragment'])) {
+    if (empty($url['path']) && empty($url['host']) && empty($url['fragment']) && empty($url['url'])) {
       return $text;
     }
 
@@ -1425,7 +1437,7 @@ abstract class FieldPluginBase extends HandlerBase {
     $alt = strtr($alter['alt'], $tokens);
     // Set the title attribute of the link only if it improves accessibility
     if ($alt && $alt != $text) {
-      $options['attributes']['title'] = decode_entities($alt);
+      $options['attributes']['title'] = String::decodeEntities($alt);
     }
 
     $class = strtr($alter['link_class'], $tokens);
@@ -1482,7 +1494,12 @@ abstract class FieldPluginBase extends HandlerBase {
       $options['entity_type'] = $alter['entity_type'];
     }
 
-    $value .= _l($text, $path, $options);
+    if (isset($options['url']) && $options['url'] instanceof Url) {
+      $value .= $this->linkGenerator()->generate($text, $options['url']);
+    }
+    else {
+      $value .= _l($text, $path, $options);
+    }
 
     if (!empty($alter['suffix'])) {
       $value .= Xss::filterAdmin(strtr($alter['suffix'], $tokens));
@@ -1513,7 +1530,7 @@ abstract class FieldPluginBase extends HandlerBase {
       // Use strip tags as there should never be HTML in the path.
       // However, we need to preserve special characters like " that
       // were removed by String::checkPlain().
-      $tokens['!' . $count] = isset($this->view->args[$count - 1]) ? strip_tags(decode_entities($this->view->args[$count - 1])) : '';
+      $tokens['!' . $count] = isset($this->view->args[$count - 1]) ? strip_tags(String::decodeEntities($this->view->args[$count - 1])) : '';
     }
 
     // Get flattened set of tokens for any array depth in query parameters.
@@ -1595,7 +1612,7 @@ abstract class FieldPluginBase extends HandlerBase {
       else {
         // Create a token key based on array element structure.
         $token_string = !empty($parent_keys) ? implode('_', $parent_keys) . '_' . $param : $param;
-        $tokens['%' . $token_string] = strip_tags(decode_entities($val));
+        $tokens['%' . $token_string] = strip_tags(String::decodeEntities($val));
       }
     }
 
@@ -1688,8 +1705,8 @@ abstract class FieldPluginBase extends HandlerBase {
    *   The trimmed string.
    */
   public static function trimText($alter, $value) {
-    if (drupal_strlen($value) > $alter['max_length']) {
-      $value = drupal_substr($value, 0, $alter['max_length']);
+    if (Unicode::strlen($value) > $alter['max_length']) {
+      $value = Unicode::substr($value, 0, $alter['max_length']);
       if (!empty($alter['word_boundary'])) {
         $regex = "(.*)\b.+";
         if (function_exists('mb_ereg')) {
@@ -1717,6 +1734,17 @@ abstract class FieldPluginBase extends HandlerBase {
     return $value;
   }
 
+  /**
+   * Gets the link generator.
+   *
+   * @return \Drupal\Core\Utility\LinkGeneratorInterface
+   */
+  protected function linkGenerator() {
+    if (!isset($this->linkGenerator)) {
+      $this->linkGenerator = \Drupal::linkGenerator();
+    }
+    return $this->linkGenerator;
+  }
 }
 
 /**

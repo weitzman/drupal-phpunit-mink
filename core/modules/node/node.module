@@ -30,7 +30,7 @@ use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\Display\EntityFormDisplayInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\file\Entity\File;
-use Drupal\language\Entity\ConfigurableLanguage;
+use Drupal\language\ConfigurableLanguageInterface;
 use Drupal\block\Entity\Block;
 use Drupal\Core\Session\AccountInterface;
 
@@ -137,31 +137,26 @@ function node_theme() {
   return array(
     'node' => array(
       'render element' => 'elements',
-      'template' => 'node',
     ),
     'node_search_admin' => array(
       'render element' => 'form',
+      'function' => 'theme_node_search_admin',
     ),
     'node_add_list' => array(
       'variables' => array('content' => NULL),
       'file' => 'node.pages.inc',
-      'template' => 'node-add-list',
     ),
     'node_edit_form' => array(
       'render element' => 'form',
-      'template' => 'node-edit-form',
     ),
     'field__node__title' => array(
       'base hook' => 'field',
-      'template' => 'field--node--title',
     ),
     'field__node__uid' => array(
       'base hook' => 'field',
-      'template' => 'field--node--uid',
     ),
     'field__node__created' => array(
       'base hook' => 'field',
-      'template' => 'field--node--created',
     ),
   );
 }
@@ -575,9 +570,9 @@ function node_theme_suggestions_node(array $variables) {
  *
  * Default template: node.html.twig.
  *
- * Most themes utilize their own copy of node.html.twig. The default is located
- * inside "/core/modules/node/templates/node.html.twig". Look in there for the full
- * list of variables.
+ * Most themes use their own copy of node.html.twig. The default is located
+ * inside "/core/modules/node/templates/node.html.twig". Look in there for the
+ * full list of variables.
  *
  * @param array $variables
  *   An associative array containing:
@@ -592,9 +587,9 @@ function template_preprocess_node(&$variables) {
   $variables['node'] = $variables['elements']['#node'];
   /** @var \Drupal\node\NodeInterface $node */
   $node = $variables['node'];
-  $variables['date'] = drupal_render($variables['elements']['created'], TRUE);
+  $variables['date'] = drupal_render($variables['elements']['created']);
   unset($variables['elements']['created']);
-  $variables['author_name'] = drupal_render($variables['elements']['uid'], TRUE);
+  $variables['author_name'] = drupal_render($variables['elements']['uid']);
   unset($variables['elements']['uid']);
 
   $variables['url'] = $node->url('canonical', array(
@@ -890,9 +885,9 @@ function node_view_multiple($nodes, $view_mode = 'teaser', $langcode = NULL) {
 }
 
 /**
- * Implements hook_page_build().
+ * Implements hook_page_top().
  */
-function node_page_build(&$page) {
+function node_page_top(array &$page) {
   // Add 'Back to content editing' link on preview page.
   $route_match = \Drupal::routeMatch();
   if ($route_match->getRouteName() == 'entity.node.preview') {
@@ -966,7 +961,7 @@ function node_form_system_themes_admin_form_submit($form, FormStateInterface $fo
   \Drupal::config('node.settings')
     ->set('use_admin_theme', $form_state->getValue('use_admin_theme'))
     ->save();
-  \Drupal::service('router.builder')->setRebuildNeeded();
+  \Drupal::service('router.builder_indicator')->setRebuildNeeded();
 }
 
 /**
@@ -1307,7 +1302,7 @@ function _node_access_rebuild_batch_operation(&$context) {
   $limit = 20;
   $nids = \Drupal::entityQuery('node')
     ->condition('nid', $context['sandbox']['current_node'], '>')
-    ->sort('nid', 'DESC')
+    ->sort('nid', 'ASC')
     ->range(0, $limit)
     ->execute();
   $nodes = node_load_multiple($nids, TRUE);
@@ -1405,7 +1400,7 @@ function node_modules_uninstalled($modules) {
 /**
  * Implements hook_ENTITY_TYPE_delete() for 'configurable_language'.
  */
-function node_configurable_language_delete(ConfigurableLanguage $language) {
+function node_configurable_language_delete(ConfigurableLanguageInterface $language) {
   // On nodes with this language, unset the language.
   \Drupal::entityManager()->getStorage('node')->clearRevisionsLanguage($language);
 }

@@ -10,7 +10,7 @@ namespace Drupal\Core\Config\Entity;
 use Drupal\Core\Entity\EntityInterface;
 
 /**
- * Defines the interface common for all configuration entities.
+ * Defines a common interface for configuration entities.
  *
  * @ingroup config_api
  * @ingroup entity_api
@@ -146,16 +146,10 @@ interface ConfigEntityInterface extends EntityInterface {
    *
    * @return array
    *   An array of dependencies grouped by type (module, theme, entity).
+   *
+   * @see \Drupal\Core\Config\Entity\ConfigDependencyManager
    */
   public function calculateDependencies();
-
-  /**
-   * Gets the configuration dependency name.
-   *
-   * @return string
-   *   The configuration dependency name.
-   */
-  public function getConfigDependencyName();
 
   /**
    * Informs the entity that entities it depends on will be deleted.
@@ -176,6 +170,7 @@ interface ConfigEntityInterface extends EntityInterface {
    *   An array of dependencies that will be deleted keyed by dependency type.
    *   Dependency types are, for example, entity, module and theme.
    *
+   * @see \Drupal\Core\Config\Entity\ConfigDependencyManager
    * @see \Drupal\Core\Config\ConfigManager::uninstall()
    * @see \Drupal\Core\Entity\EntityDisplayBase::onDependencyRemoval()
    */
@@ -185,8 +180,9 @@ interface ConfigEntityInterface extends EntityInterface {
    * Gets the configuration dependencies.
    *
    * @return array
-   *   An array of dependencies. If $type not set all dependencies will be
-   *   returned keyed by $type.
+   *   An array of dependencies, keyed by $type.
+   *
+   * @see \Drupal\Core\Config\Entity\ConfigDependencyManager
    */
   public function getDependencies();
 

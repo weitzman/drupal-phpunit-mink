@@ -6,6 +6,7 @@
  */
 
 use Drupal\Component\Utility\Tags;
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -84,11 +85,11 @@ function taxonomy_help($route_name, RouteMatchInterface $route_match) {
       $vocabulary = $route_match->getParameter('taxonomy_vocabulary');
       switch ($vocabulary->hierarchy) {
         case TAXONOMY_HIERARCHY_DISABLED:
-          return '<p>' . t('You can reorganize the terms in %capital_name using their drag-and-drop handles, and group terms under a parent term by sliding them under and to the right of the parent.', array('%capital_name' => drupal_ucfirst($vocabulary->name), '%name' => $vocabulary->name)) . '</p>';
+          return '<p>' . t('You can reorganize the terms in %capital_name using their drag-and-drop handles, and group terms under a parent term by sliding them under and to the right of the parent.', array('%capital_name' => Unicode::ucfirst($vocabulary->name), '%name' => $vocabulary->name)) . '</p>';
         case TAXONOMY_HIERARCHY_SINGLE:
-          return '<p>' . t('%capital_name contains terms grouped under parent terms. You can reorganize the terms in %capital_name using their drag-and-drop handles.', array('%capital_name' => drupal_ucfirst($vocabulary->name), '%name' => $vocabulary->name)) . '</p>';
+          return '<p>' . t('%capital_name contains terms grouped under parent terms. You can reorganize the terms in %capital_name using their drag-and-drop handles.', array('%capital_name' => Unicode::ucfirst($vocabulary->name), '%name' => $vocabulary->name)) . '</p>';
         case TAXONOMY_HIERARCHY_MULTIPLE:
-          return '<p>' . t('%capital_name contains terms with multiple parents. Drag and drop of terms with multiple parents is not supported, but you can re-enable drag-and-drop support by editing each term to include only a single parent.', array('%capital_name' => drupal_ucfirst($vocabulary->name))) . '</p>';
+          return '<p>' . t('%capital_name contains terms with multiple parents. Drag and drop of terms with multiple parents is not supported, but you can re-enable drag-and-drop support by editing each term to include only a single parent.', array('%capital_name' => Unicode::ucfirst($vocabulary->name))) . '</p>';
       }
   }
 }
@@ -103,14 +104,14 @@ function taxonomy_term_uri($term) {
 }
 
 /**
- * Implements hook_page_build().
+ * Implements hook_page_attachments_alter().
  */
-function taxonomy_page_build(&$page) {
+function taxonomy_page_attachments_alter(array &$page) {
   $route_match = \Drupal::routeMatch();
   if ($route_match->getRouteName() == 'entity.taxonomy_term.canonical' && ($term = $route_match->getParameter('taxonomy_term')) && $term instanceof TermInterface) {
     foreach ($term->uriRelationships() as $rel) {
       // Set the URI relationships, like canonical.
-      $page['#attached']['drupal_add_html_head_link'][] = array(
+      $page['#attached']['html_head_link'][] = array(
         array(
           'rel' => $rel,
           'href' => $term->url($rel),
@@ -121,7 +122,7 @@ function taxonomy_page_build(&$page) {
       // Set the term path as the canonical URL to prevent duplicate content.
       if ($rel == 'canonical') {
         // Set the non-aliased canonical path as a default shortlink.
-        $page['#attached']['drupal_add_html_head_link'][] = array(
+        $page['#attached']['html_head_link'][] = array(
           array(
             'rel' => 'shortlink',
             'href' => $term->url($rel, array('alias' => TRUE)),
@@ -195,7 +196,6 @@ function taxonomy_theme() {
   return array(
     'taxonomy_term' => array(
       'render element' => 'elements',
-      'template' => 'taxonomy-term',
     ),
   );
 }
@@ -267,7 +267,7 @@ function taxonomy_term_view(Term $term, $view_mode = 'full', $langcode = NULL) {
  * Constructs a drupal_render() style array from an array of loaded terms.
  *
  * @param array $terms
- *   An array of taxonomy terms as returned by entity_load_multiple('taxonomy_term').
+ *   An array of taxonomy terms as returned by Term::loadMultiple().
  * @param string $view_mode
  *   View mode, e.g. 'full', 'teaser'...
  * @param string $langcode
@@ -684,7 +684,7 @@ function taxonomy_build_node_index($node) {
       $field_name = $field->getName();
       if ($field->getType() == 'taxonomy_term_reference') {
         foreach ($node->getTranslationLanguages() as $language) {
-          foreach ($node->getTranslation($language->id)->$field_name as $item) {
+          foreach ($node->getTranslation($language->getId())->$field_name as $item) {
             if (!$item->isEmpty()) {
               $tid_all[$item->target_id] = $item->target_id;
             }

@@ -14,8 +14,7 @@ use Drupal\Core\Render\Element\FormElement;
 /**
  * Provides language element configuration.
  *
- * @todo Annotate once https://www.drupal.org/node/2326409 is in.
- *   FormElement("language_configuration")
+ * @FormElement("language_configuration")
  */
 class LanguageConfiguration extends FormElement {
 
@@ -93,14 +92,14 @@ class LanguageConfiguration extends FormElement {
    */
   protected static function getDefaultOptions() {
     $language_options = array(
-      'site_default' => t("Site's default language (!language)", array('!language' => static::languageManager()->getDefaultLanguage()->name)),
+      LanguageInterface::LANGCODE_SITE_DEFAULT => t("Site's default language (!language)", array('!language' => static::languageManager()->getDefaultLanguage()->getName())),
       'current_interface' => t('Current interface language'),
       'authors_default' => t("Author's preferred language"),
     );
 
     $languages = static::languageManager()->getLanguages(LanguageInterface::STATE_ALL);
     foreach ($languages as $langcode => $language) {
-      $language_options[$langcode] = $language->isLocked() ? t('- @name -', array('@name' => $language->name)) : $language->name;
+      $language_options[$langcode] = $language->isLocked() ? t('- @name -', array('@name' => $language->getName())) : $language->getName();
     }
 
     return $language_options;

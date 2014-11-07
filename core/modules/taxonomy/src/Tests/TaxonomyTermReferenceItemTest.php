@@ -7,11 +7,13 @@
 
 namespace Drupal\taxonomy\Tests;
 
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Field\FieldItemInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Tests\FieldUnitTestBase;
+use Drupal\taxonomy\Entity\Term;
 
 /**
  * Tests the new entity API for the taxonomy term reference field type.
@@ -25,7 +27,7 @@ class TaxonomyTermReferenceItemTest extends FieldUnitTestBase {
    *
    * @var array
    */
-  public static $modules = array('taxonomy', 'entity_reference', 'options', 'text', 'filter');
+  public static $modules = array('taxonomy', 'entity_reference', 'text', 'filter');
 
   /**
    * The term entity.
@@ -40,7 +42,7 @@ class TaxonomyTermReferenceItemTest extends FieldUnitTestBase {
 
     $vocabulary = entity_create('taxonomy_vocabulary', array(
       'name' => $this->randomMachineName(),
-      'vid' => drupal_strtolower($this->randomMachineName()),
+      'vid' => Unicode::strtolower($this->randomMachineName()),
       'langcode' => LanguageInterface::LANGCODE_NOT_SPECIFIED,
     ));
     $vocabulary->save();
@@ -96,7 +98,7 @@ class TaxonomyTermReferenceItemTest extends FieldUnitTestBase {
     $entity->field_test_taxonomy->entity->setName($new_name);
     $entity->field_test_taxonomy->entity->save();
     // Verify it is the correct name.
-    $term = entity_load('taxonomy_term', $tid);
+    $term = Term::load($tid);
     $this->assertEqual($term->getName(), $new_name, 'The name of the term was changed.');
 
     // Make sure the computed term reflects updates to the term id.

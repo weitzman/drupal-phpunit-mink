@@ -23,6 +23,7 @@
 use Drupal\Core\DrupalKernel;
 use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\Page\DefaultHtmlPageRenderer;
 
@@ -71,6 +72,7 @@ drupal_maintenance_theme();
 $output = '';
 $show_messages = TRUE;
 
+$response = new Response();
 if (authorize_access_allowed()) {
   // Load both the Form API and Batch API.
   require_once __DIR__ . '/includes/form.inc';
@@ -102,7 +104,7 @@ if (authorize_access_allowed()) {
       '#theme' => 'authorize_report',
       '#messages' => $results['messages'],
     );
-    $output = drupal_render($authorize_report);
+    $output = drupal_render_root($authorize_report);
 
     $links = array();
     if (is_array($results['tasks'])) {
@@ -120,7 +122,7 @@ if (authorize_access_allowed()) {
       '#items' => $links,
       '#title' => t('Next steps'),
     );
-    $output .= drupal_render($item_list);
+    $output .= drupal_render_root($item_list);
   }
   // If a batch is running, let it run.
   elseif ($request->query->has('batch')) {
@@ -133,22 +135,23 @@ if (authorize_access_allowed()) {
     elseif (!$batch = batch_get()) {
       // We have a batch to process, show the filetransfer form.
       $elements = \Drupal::formBuilder()->getForm('Drupal\Core\FileTransfer\Form\FileTransferAuthorizeForm');
-      $output = drupal_render($elements);
+      $output = drupal_render_root($elements);
     }
   }
   // We defer the display of messages until all operations are done.
   $show_messages = !(($batch = batch_get()) && isset($batch['running']));
 }
 else {
-  drupal_add_http_header('Status', '403 Forbidden');
+  $response->setStatusCode(403);
   \Drupal::logger('access denied')->warning('authorize.php');
   $page_title = t('Access denied');
   $output = t('You are not allowed to access this page.');
 }
 
 if (!empty($output)) {
-  drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
-  print DefaultHtmlPageRenderer::renderPage($output, $page_title, 'maintenance', array(
+  $response->headers->set('Content-Type', 'text/html; charset=utf-8');
+  $response->setContent(DefaultHtmlPageRenderer::renderPage($output, $page_title, 'maintenance', array(
     '#show_messages' => $show_messages,
-  ));
+  )));
+  $response->send();
 }

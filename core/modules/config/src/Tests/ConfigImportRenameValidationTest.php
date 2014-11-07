@@ -34,7 +34,7 @@ class ConfigImportRenameValidationTest extends DrupalUnitTestBase {
    *
    * @var array
    */
-  public static $modules = array('system', 'user', 'node', 'field', 'text', 'entity', 'config_test');
+  public static $modules = array('system', 'user', 'node', 'field', 'text', 'entity', 'config_test', 'entity_reference');
 
   /**
    * {@inheritdoc}
@@ -55,7 +55,7 @@ class ConfigImportRenameValidationTest extends DrupalUnitTestBase {
       $storage_comparer->createChangelist(),
       $this->container->get('event_dispatcher'),
       $this->container->get('config.manager'),
-      $this->container->get('lock'),
+      $this->container->get('lock.persistent'),
       $this->container->get('config.typed'),
       $this->container->get('module_handler'),
       $this->container->get('theme_handler'),

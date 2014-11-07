@@ -8,12 +8,14 @@
 namespace Drupal\field_ui;
 
 use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\EntityListBuilderInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Url;
 use Drupal\field_ui\OverviewBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -135,8 +137,7 @@ class FieldOverview extends OverviewBase {
         'type' => array(
           '#type' => 'link',
           '#title' => $field_types[$field_storage->getType()]['label'],
-          '#route_name' => 'field_ui.storage_edit_' . $this->entity_type,
-          '#route_parameters' => $route_parameters,
+          '#url' => Url::fromRoute('field_ui.storage_edit_' . $this->entity_type, $route_parameters),
           '#options' => array('attributes' => array('title' => $this->t('Edit field settings.'))),
         ),
       );
@@ -228,7 +229,7 @@ class FieldOverview extends OverviewBase {
           '@label' => $info['label'],
           '@field' => $info['field'],
         ));
-        $existing_field_options[$field_name] = truncate_utf8($text, 80, FALSE, TRUE);
+        $existing_field_options[$field_name] = Unicode::truncate($text, 80, FALSE, TRUE);
       }
       asort($existing_field_options);
       $name = '_add_existing_field';

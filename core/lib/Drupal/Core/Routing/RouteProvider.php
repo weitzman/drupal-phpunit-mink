@@ -9,6 +9,8 @@ namespace Drupal\Core\Routing;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\State\StateInterface;
+use Symfony\Cmf\Component\Routing\PagedRouteCollection;
+use Symfony\Cmf\Component\Routing\PagedRouteProviderInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
@@ -20,7 +22,7 @@ use \Drupal\Core\Database\Connection;
 /**
  * A Route Provider front-end for all Drupal-stored routes.
  */
-class RouteProvider implements RouteProviderInterface, EventSubscriberInterface {
+class RouteProvider implements RouteProviderInterface, PagedRouteProviderInterface, EventSubscriberInterface {
 
   /**
    * The database connection from which to read route information.
@@ -172,8 +174,9 @@ class RouteProvider implements RouteProviderInterface, EventSubscriberInterface 
       throw new \InvalidArgumentException('You must specify the route names to load');
     }
 
-    $routes_to_load = array_diff($names, array_keys($this->routes));
+    $this->routeBuilder->rebuildIfNeeded();
 
+    $routes_to_load = array_diff($names, array_keys($this->routes));
     if ($routes_to_load) {
       $result = $this->connection->query('SELECT name, route FROM {' . $this->connection->escapeTable($this->tableName) . '} WHERE name IN (:names)', array(':names' => $routes_to_load));
       $routes = $result->fetchAllKeyed();
@@ -258,6 +261,7 @@ class RouteProvider implements RouteProviderInterface, EventSubscriberInterface 
    */
   public function getRoutesByPattern($pattern) {
     $path = RouteCompiler::getPatternOutline($pattern);
+    $this->routeBuilder->rebuildIfNeeded();
 
     return $this->getRoutesByPath($path);
   }
@@ -304,7 +308,7 @@ class RouteProvider implements RouteProviderInterface, EventSubscriberInterface 
    * {@inheritdoc}
    */
   public function getAllRoutes() {
-    return new LazyLoadingRouteCollection($this->connection, $this->tableName);
+    return new PagedRouteCollection($this);
   }
 
   /**
@@ -320,6 +324,34 @@ class RouteProvider implements RouteProviderInterface, EventSubscriberInterface 
   static function getSubscribedEvents() {
     $events[RoutingEvents::FINISHED][] = array('reset');
     return $events;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getRoutesPaged($offset, $length = NULL) {
+    $select = $this->connection->select($this->tableName, 'router')
+      ->fields('router', ['name', 'route']);
+
+    if (isset($length)) {
+      $select->range($offset, $length);
+    }
+
+    $routes = $select->execute()->fetchAllKeyed();
+
+    $result = [];
+    foreach ($routes as $name => $route) {
+      $result[$name] = unserialize($route);
+    }
+
+    return $result;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getRoutesCount() {
+    return $this->connection->query("SELECT COUNT(*) FROM {" . $this->connection->escapeTable($this->tableName) . "}")->fetchField();
   }
 
 }

@@ -90,8 +90,9 @@ class PHPUnit_Framework_Constraint_ClassHasStaticAttribute extends PHPUnit_Frame
     public function toString()
     {
         return sprintf(
-            'has static attribute "%s"',
-            $this->attributeName
+          'has static attribute "%s"',
+
+          $this->attributeName
         );
     }
 }

@@ -10,7 +10,7 @@ namespace Drupal\views\Tests;
 use Drupal\views\Views;
 use Drupal\views\ViewExecutable;
 use Drupal\views\ViewExecutableFactory;
-use Drupal\views\DisplayBag;
+use Drupal\views\DisplayPluginCollection;
 use Drupal\views\Plugin\views\display\DefaultDisplay;
 use Drupal\views\Plugin\views\display\Page;
 use Drupal\views\Plugin\views\style\DefaultStyle;
@@ -30,7 +30,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class ViewExecutableTest extends ViewUnitTestBase {
 
-  public static $modules = array('system', 'node', 'comment', 'user', 'filter', 'entity', 'field', 'text');
+  public static $modules = array('system', 'node', 'comment', 'user', 'filter', 'entity', 'field', 'text', 'entity_reference');
 
   /**
    * Views used by this test.
@@ -196,7 +196,7 @@ class ViewExecutableTest extends ViewUnitTestBase {
 
     // Tests Drupal\views\ViewExecutable::initDisplay().
     $view->initDisplay();
-    $this->assertTrue($view->displayHandlers instanceof DisplayBag, 'The displayHandlers property has the right class.');
+    $this->assertTrue($view->displayHandlers instanceof DisplayPluginCollection, 'The displayHandlers property has the right class.');
     // Tests the classes of the instances.
     $this->assertTrue($view->displayHandlers->get('default') instanceof DefaultDisplay);
     $this->assertTrue($view->displayHandlers->get('page_1') instanceof Page);

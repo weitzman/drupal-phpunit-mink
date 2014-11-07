@@ -96,7 +96,7 @@ function drupal_xml_parser_create(&$data) {
   // Unsupported encodings are converted here into UTF-8.
   $php_supported = array('utf-8', 'iso-8859-1', 'us-ascii');
   if (!in_array(strtolower($encoding), $php_supported)) {
-    $out = drupal_convert_to_utf8($data, $encoding);
+    $out = Unicode::convertToUtf8($data, $encoding);
     if ($out !== FALSE) {
       $encoding = 'utf-8';
       $data = preg_replace('/^(<\?xml[^>]+encoding)="(.+?)"/', '\\1="utf-8"', $out);
@@ -123,7 +123,8 @@ function drupal_xml_parser_create(&$data) {
  * @return string|bool
  *   Converted data or FALSE.
  *
- * @see \Drupal\Component\Utility\Unicode::convertToUtf8().
+ * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.0.
+ *   Use \Drupal\Component\Utility\Unicode::convertToUtf8().
  */
 function drupal_convert_to_utf8($data, $encoding) {
   $out = Unicode::convertToUtf8($data, $encoding);
@@ -145,50 +146,11 @@ function drupal_convert_to_utf8($data, $encoding) {
  * @return string
  *   The truncated string.
  *
- * @see \Drupal\Component\Utility\Unicode::truncateBytes().
+ * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.0.
+ *   Use \Drupal\Component\Utility\Unicode::truncateBytes().
  */
 function drupal_truncate_bytes($string, $len) {
   return Unicode::truncateBytes($string, $len);
-}
-
-/**
- * Truncates a UTF-8-encoded string safely to a number of characters.
- *
- * @param $string
- *   The string to truncate.
- * @param $max_length
- *   An upper limit on the returned string length, including trailing ellipsis
- *   if $add_ellipsis is TRUE.
- * @param $wordsafe
- *   If TRUE, attempt to truncate on a word boundary. Word boundaries are
- *   spaces, punctuation, and Unicode characters used as word boundaries in
- *   non-Latin languages; see Unicode::PREG_CLASS_WORD_BOUNDARY for more
- *   information. If a word boundary cannot be found that would make the length
- *   of the returned string fall within length guidelines (see parameters
- *   $max_length and $min_wordsafe_length), word boundaries are ignored.
- * @param $add_ellipsis
- *   If TRUE, add t('...') to the end of the truncated string (defaults to
- *   FALSE). The string length will still fall within $max_length.
- * @param $min_wordsafe_length
- *   If $wordsafe is TRUE, the minimum acceptable length for truncation (before
- *   adding an ellipsis, if $add_ellipsis is TRUE). Has no effect if $wordsafe
- *   is FALSE. This can be used to prevent having a very short resulting string
- *   that will not be understandable. For instance, if you are truncating the
- *   string "See myverylongurlexample.com for more information" to a word-safe
- *   return length of 20, the only available word boundary within 20 characters
- *   is after the word "See", which wouldn't leave a very informative string. If
- *   you had set $min_wordsafe_length to 10, though, the function would realise
- *   that "See" alone is too short, and would then just truncate ignoring word
- *   boundaries, giving you "See myverylongurl..." (assuming you had set
- *   $add_ellipses to TRUE).
- *
- * @return string
- *   The truncated string.
- *
- * @see \Drupal\Component\Utility\Unicode::truncate().
- */
-function truncate_utf8($string, $max_length, $wordsafe = FALSE, $add_ellipsis = FALSE, $min_wordsafe_length = 1) {
-  return Unicode::truncate($string, $max_length, $wordsafe, $add_ellipsis, $min_wordsafe_length);
 }
 
 /**
@@ -201,7 +163,8 @@ function truncate_utf8($string, $max_length, $wordsafe = FALSE, $add_ellipsis = 
  *   The mime-encoded header.
  *
  * @see mime_header_decode()
- * @see \Drupal\Component\Utility\Unicode::mimeHeaderEncode().
+ * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.0.
+ *   Use \Drupal\Component\Utility\Unicode::mimeHeaderEncode().
  */
 function mime_header_encode($string) {
   return Unicode::mimeHeaderEncode($string);
@@ -217,89 +180,11 @@ function mime_header_encode($string) {
  *   The mime-decoded header.
  *
  * @see mime_header_encode()
- * @see \Drupal\Component\Utility\Unicode::mimeHeaderDecode().
+ * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.0.
+ *   Use \Drupal\Component\Utility\Unicode::mimeHeaderDecode().
  */
 function mime_header_decode($header) {
   return Unicode::mimeHeaderDecode($header);
-}
-
-/**
- * Decodes all HTML entities (including numerical ones) to regular UTF-8 bytes.
- *
- * @param $text
- *   The text to decode entities in.
- *
- * @return
- *   The input $text, with all HTML entities decoded once.
- *
- * @see \Drupal\Component\Utility\String::decodeEntities().
- */
-function decode_entities($text) {
-  return String::decodeEntities($text);
-}
-
-/**
- * Counts the number of characters in a UTF-8 string.
- *
- * @param $text
- *   The string to run the operation on.
- *
- * @return integer
- *   The length of the string.
- *
- * @see \Drupal\Component\Utility\Unicode::strlen().
- * @ingroup php_wrappers
- */
-function drupal_strlen($text) {
-  return Unicode::strlen($text);
-}
-
-/**
- * Uppercase a UTF-8 string.
- *
- * @param $text
- *   The string to run the operation on.
- *
- * @return string
- *   The string in uppercase.
- *
- * @see \Drupal\Component\Utility\Unicode::strtoupper().
- * @ingroup php_wrappers
- */
-function drupal_strtoupper($text) {
-  return Unicode::strtoupper($text);
-}
-
-/**
- * Lowercase a UTF-8 string.
- *
- * @param $text
- *   The string to run the operation on.
- *
- * @return string
- *   The string in lowercase.
- *
- * @see \Drupal\Component\Utility\Unicode::strtolower().
- * @ingroup php_wrappers
- */
-function drupal_strtolower($text) {
-  return Unicode::strtolower($text);
-}
-
-/**
- * Capitalizes the first letter of a UTF-8 string.
- *
- * @param $text
- *   The string to convert.
- *
- * @return
- *   The string with the first letter as uppercase.
- *
- * @see \Drupal\Component\Utility\Unicode::ucfirst().
- * @ingroup php_wrappers
- */
-function drupal_ucfirst($text) {
-  return Unicode::ucfirst($text);
 }
 
 /**
@@ -312,10 +197,11 @@ function drupal_ucfirst($text) {
  * @param $length
  *   The number of characters to read.
  *
- * @return
+ * @return string
  *   The shortened string.
  *
- * @see \Drupal\Component\Utility\Unicode::substr().
+ * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.0.
+ *   Use \Drupal\Component\Utility\Unicode::substr().
  * @ingroup php_wrappers
  */
 function drupal_substr($text, $start, $length = NULL) {

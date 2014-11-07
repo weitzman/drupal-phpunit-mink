@@ -7,14 +7,14 @@
 
 namespace Drupal\filter\Tests;
 
-use Drupal\simpletest\DrupalUnitTestBase;
+use Drupal\simpletest\KernelTestBase;
 
 /**
  * Tests creation, loading, updating, deleting of text formats and filters.
  *
  * @group filter
  */
-class FilterCrudTest extends DrupalUnitTestBase {
+class FilterCrudTest extends KernelTestBase {
 
   /**
    * Modules to enable.
@@ -78,7 +78,7 @@ class FilterCrudTest extends DrupalUnitTestBase {
    */
   function verifyTextFormat($format) {
     $t_args = array('%format' => $format->name);
-    $default_langcode = \Drupal::languageManager()->getDefaultLanguage()->id;
+    $default_langcode = \Drupal::languageManager()->getDefaultLanguage()->getId();
 
     // Verify the loaded filter has all properties.
     $filter_format = entity_load('filter_format', $format->format);

@@ -23,7 +23,7 @@ namespace Drupal\Core\TypedData;
  *
  * @ingroup typed_data
  */
-interface ComplexDataInterface extends \Traversable, TypedDataInterface  {
+interface ComplexDataInterface extends TraversableTypedDataInterface  {
 
   /**
    * Gets a property object.
@@ -100,13 +100,4 @@ interface ComplexDataInterface extends \Traversable, TypedDataInterface  {
    */
   public function isEmpty();
 
-  /**
-   * React to changes to a child property.
-   *
-   * Note that this is invoked after any changes have been applied.
-   *
-   * @param $property_name
-   *   The name of the property which is changed.
-   */
-  public function onChange($property_name);
 }

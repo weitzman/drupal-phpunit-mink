@@ -4,12 +4,14 @@
  * Allows users to change the color scheme of themes.
  */
 
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Asset\CssOptimizer;
 use Drupal\Component\Utility\Bytes;
 use Drupal\Component\Utility\Environment;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Render\Element\Textfield;
 use Drupal\Core\Routing\RouteMatchInterface;
 
@@ -38,7 +40,6 @@ function color_theme() {
   return array(
     'color_scheme_form' => array(
       'render element' => 'form',
-      'template' => 'color-scheme-form',
     ),
   );
 }
@@ -272,7 +273,7 @@ function color_scheme_form($complete_form, FormStateInterface $form_state, $them
         '#value_callback' => 'color_palette_color_value',
         '#default_value' => $value,
         '#size' => 8,
-        '#attributes' => array('dir' => 'ltr'),
+        '#attributes' => array('dir' => LanguageInterface::DIRECTION_LTR),
       );
     }
   }
@@ -515,7 +516,7 @@ function _color_rewrite_stylesheet($theme, &$info, &$paths, $palette, $style) {
   // Prepare color conversion table.
   $conversion = $palette;
   foreach ($conversion as $k => $v) {
-    $conversion[$k] = drupal_strtolower($v);
+    $conversion[$k] = Unicode::strtolower($v);
   }
   $default = color_get_palette($theme, TRUE);
 
@@ -534,7 +535,7 @@ function _color_rewrite_stylesheet($theme, &$info, &$paths, $palette, $style) {
   // Iterate over all the parts.
   foreach ($style as $chunk) {
     if ($is_color) {
-      $chunk = drupal_strtolower($chunk);
+      $chunk = Unicode::strtolower($chunk);
       // Check if this is one of the colors in the default palette.
       if ($key = array_search($chunk, $default)) {
         $chunk = $conversion[$key];

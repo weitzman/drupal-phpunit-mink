@@ -67,7 +67,9 @@ class PHPUnit_Util_TestSuiteIterator implements RecursiveIterator
     protected $tests;
 
     /**
-     * @param PHPUnit_Framework_TestSuite $testSuite
+     * Constructor.
+     *
+     * @param PHPUnit_Framework_TestSuite $suite
      */
     public function __construct(PHPUnit_Framework_TestSuite $testSuite)
     {
@@ -130,7 +132,7 @@ class PHPUnit_Util_TestSuiteIterator implements RecursiveIterator
     public function getChildren()
     {
         return new PHPUnit_Util_TestSuiteIterator(
-            $this->tests[$this->position]
+          $this->tests[$this->position]
         );
     }
 

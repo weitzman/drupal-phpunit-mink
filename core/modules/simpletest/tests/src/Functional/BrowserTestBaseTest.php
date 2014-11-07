@@ -27,7 +27,7 @@ class BrowserTestBaseTest extends BrowserTestBase {
   /**
    * Tests basic page test.
    */
-  function testGoTo() {
+  public function testGoTo() {
     // Visit a drupal page.
     $this->drupalGet('/simpletest/hello');
 
@@ -39,15 +39,10 @@ class BrowserTestBaseTest extends BrowserTestBase {
   }
 
   /**
-   * Tests basic page test.
+   * Tests basic form functionality.
    */
-  function testForm() {
+  public function testForm() {
     $this->drupalGet('');
-
-    // Fill out form.
-
-
-    // File upload.
-
   }
+
 }

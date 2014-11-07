@@ -69,19 +69,6 @@ function menu_ui_entity_type_build(array &$entity_types) {
     ->setLinkTemplate('add-link-form', 'entity.menu.add_link_form');
 }
 
-
-/**
- * Implements hook_theme().
- */
-function menu_ui_theme() {
-  return array(
-    'menu_overview_form' => array(
-      'file' => 'menu_ui.admin.inc',
-      'render element' => 'form',
-    ),
-  );
-}
-
 /**
  * Implements hook_ENTITY_TYPE_insert( for menu entities.
  */
@@ -182,8 +169,7 @@ function menu_ui_node_save(EntityInterface $node) {
           'parent' => $definition['parent'],
           'weight' => isset($definition['weight']) ? $definition['weight'] : 0,
           'enabled' => 1,
-          'bundle' => 'menu_link_content',
-          'langcode' => $node->getUntranslated()->language()->id,
+          'langcode' => $node->getUntranslated()->language()->getId(),
         ));
       }
       if (!$entity->save()) {
@@ -319,7 +305,7 @@ function menu_ui_form_node_form_alter(&$form, FormStateInterface $form_state) {
     '#open' => (bool) $definition['id'],
     '#group' => 'advanced',
     '#attached' => array(
-      'library' => array('menu/drupal.menu'),
+      'library' => array('menu_ui/drupal.menu_ui'),
     ),
     '#tree' => TRUE,
     '#weight' => -2,

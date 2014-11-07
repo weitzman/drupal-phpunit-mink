@@ -86,9 +86,10 @@ class PHPUnit_Framework_TestFailure
     public function toString()
     {
         return sprintf(
-            '%s: %s',
-            $this->failedTest->toString(),
-            $this->thrownException->getMessage()
+          '%s: %s',
+
+          $this->failedTest->toString(),
+          $this->thrownException->getMessage()
         );
     }
 

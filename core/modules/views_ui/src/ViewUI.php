@@ -12,6 +12,7 @@ use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\Timer;
 use Drupal\Component\Utility\Xss;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Drupal\views\Views;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\views\ViewExecutable;
@@ -693,7 +694,7 @@ class ViewUI implements ViewStorageInterface {
               Xss::filterAdmin($this->executable->getTitle()),
             );
             if (isset($path)) {
-              $path = _l($path, $path);
+              $path = \Drupal::l($path, Url::fromUri('base://' . $path));
             }
             else {
               $path = t('This display has no path.');
@@ -707,7 +708,7 @@ class ViewUI implements ViewStorageInterface {
             $rows['statistics'][] = array('<strong>' . t('View render time') . '</strong>', t('@time ms', array('@time' => intval($this->executable->render_time * 100000) / 100)));
 
           }
-          \Drupal::moduleHandler()->alter('views_preview_info', $rows, $this);
+          \Drupal::moduleHandler()->alter('views_preview_info', $rows, $this->executable);
         }
         else {
           // No query was run. Display that information in place of either the
@@ -1123,8 +1124,8 @@ class ViewUI implements ViewStorageInterface {
   /**
    * {@inheritdoc}
    */
-  public function getCacheTag() {
-    $this->storage->getCacheTag();
+  public function getCacheTags() {
+    $this->storage->getCacheTags();
   }
 
   /**

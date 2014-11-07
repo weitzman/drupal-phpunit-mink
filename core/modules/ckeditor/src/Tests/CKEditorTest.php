@@ -7,7 +7,7 @@
 
 namespace Drupal\ckeditor\Tests;
 
-use Drupal\simpletest\DrupalUnitTestBase;
+use Drupal\simpletest\KernelTestBase;
 use Drupal\editor\Plugin\EditorManager;
 use Drupal\ckeditor\Plugin\Editor\CKEditor;
 
@@ -16,7 +16,7 @@ use Drupal\ckeditor\Plugin\Editor\CKEditor;
  *
  * @group ckeditor
  */
-class CKEditorTest extends DrupalUnitTestBase {
+class CKEditorTest extends KernelTestBase {
 
   /**
    * Modules to enable.
@@ -103,6 +103,9 @@ class CKEditorTest extends DrupalUnitTestBase {
     $this->container->get('plugin.manager.editor')->clearCachedDefinitions();
     $this->ckeditor = $this->container->get('plugin.manager.editor')->createInstance('ckeditor');
     $this->container->get('plugin.manager.ckeditor.plugin')->clearCachedDefinitions();
+    // KernelTestBase::enableModules() unfortunately doesn't invoke
+    // hook_rebuild() just like a "real" Drupal site would. Do it manually.
+    \Drupal::moduleHandler()->invoke('ckeditor', 'rebuild');
     $settings = $editor->getSettings();
     $settings['toolbar']['rows'][0][0]['items'][] = 'Strike';
     $settings['toolbar']['rows'][0][0]['items'][] = 'Format';
@@ -206,6 +209,11 @@ class CKEditorTest extends DrupalUnitTestBase {
     $expected_config['format_tags'] = 'p';
     ksort($expected_config);
     $this->assertIdentical($expected_config, $this->ckeditor->getJSSettings($editor), 'Generated JS settings are correct for customized configuration.');
+
+    // Assert that we're robust enough to withstand people messing with State
+    // manually.
+    \Drupal::state()->delete('ckeditor_internal_format_tags:' . $format->id());
+    $this->assertIdentical($expected_config, $this->ckeditor->getJSSettings($editor), 'Even when somebody manually deleted the key-value pair in State with the pre-calculated format_tags setting, it returns "p" — because the <p> tag is always allowed.');
   }
 
   /**
@@ -368,7 +376,7 @@ class CKEditorTest extends DrupalUnitTestBase {
     $editor = entity_load('editor', 'filtered_html');
     $this->ckeditor->getJSSettings($editor);
     $localeStorage = $this->container->get('locale.storage');
-    $string = $localeStorage->findString(array('source' => 'Image Properties', 'context' => ''));
+    $string = $localeStorage->findString(array('source' => 'Edit Link', 'context' => ''));
     $this->assertTrue(!empty($string), 'String from JavaScript file saved.');
   }
 

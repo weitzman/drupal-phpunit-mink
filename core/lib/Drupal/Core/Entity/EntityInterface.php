@@ -171,6 +171,9 @@ interface EntityInterface extends AccessibleInterface {
    *
    * @return string
    *   The internal path for this entity.
+   *
+   * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.0. Use
+   *    static::urlInfo() instead.
    */
   public function getSystemPath($rel = 'canonical');
 
@@ -399,6 +402,20 @@ interface EntityInterface extends AccessibleInterface {
    * @return array
    *   An array of cache tags.
    */
-  public function getCacheTag();
+  public function getCacheTags();
+
+  /**
+   * Gets the configuration dependency name.
+   *
+   * Configuration entities can depend on content and configuration entities.
+   * They store an array of content and config dependency names in their
+   * "dependencies" key.
+   *
+   * @return string
+   *   The configuration dependency name.
+   *
+   * @see \Drupal\Core\Config\Entity\ConfigDependencyManager
+   */
+  public function getConfigDependencyName();
 
 }

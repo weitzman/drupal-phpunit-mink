@@ -7,6 +7,7 @@
 
 namespace Drupal\user;
 
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
@@ -240,9 +241,9 @@ abstract class AccountForm extends ContentEntityForm {
       );
     }
 
-    $user_preferred_langcode = $register ? $language_interface->id : $account->getPreferredLangcode();
+    $user_preferred_langcode = $register ? $language_interface->getId() : $account->getPreferredLangcode();
 
-    $user_preferred_admin_langcode = $register ? $language_interface->id : $account->getPreferredAdminLangcode(FALSE);
+    $user_preferred_admin_langcode = $register ? $language_interface->getId() : $account->getPreferredAdminLangcode(FALSE);
 
     // Is the user preferred language added?
     $user_language_added = FALSE;
@@ -341,7 +342,7 @@ abstract class AccountForm extends ContentEntityForm {
           ->execute();
 
         if ($name_taken) {
-          $form_state->setErrorByName('name', $this->t('The name %name is already taken.', array('%name' => $form_state->getValue('name'))));
+          $form_state->setErrorByName('name', $this->t('The username %name is already taken.', array('%name' => $form_state->getValue('name'))));
         }
       }
     }
@@ -379,7 +380,7 @@ abstract class AccountForm extends ContentEntityForm {
       //   automatic typed data validation in https://drupal.org/node/2227381.
       $field_definitions = $this->entityManager->getFieldDefinitions('user', $this->getEntity()->bundle());
       $max_length = $field_definitions['signature']->getSetting('max_length');
-      if (drupal_strlen($form_state->getValue('signature')) > $max_length) {
+      if (Unicode::strlen($form_state->getValue('signature')) > $max_length) {
         $form_state->setErrorByName('signature', $this->t('The signature is too long: it must be %max characters or less.', array('%max' => $max_length)));
       }
     }

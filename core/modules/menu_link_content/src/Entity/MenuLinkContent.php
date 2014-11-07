@@ -222,6 +222,13 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
   /**
    * {@inheritdoc}
    */
+  public static function preCreate(EntityStorageInterface $storage, array &$values) {
+    $values += ['bundle' => 'menu_link_content'];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function postSave(EntityStorageInterface $storage, $update = TRUE) {
     parent::postSave($storage, $update);
 
@@ -352,7 +359,7 @@ class MenuLinkContent extends ContentEntityBase implements MenuLinkContentInterf
         'weight' => 0,
       ))
       ->setDisplayOptions('form', array(
-        'type' => 'integer',
+        'type' => 'number',
         'weight' => 20,
       ));
 

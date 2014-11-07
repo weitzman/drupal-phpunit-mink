@@ -101,16 +101,18 @@ class PHPUnit_Framework_Constraint_Exception extends PHPUnit_Framework_Constrain
             }
 
             return sprintf(
-                'exception of type "%s" matches expected exception "%s"%s',
-                get_class($other),
-                $this->className,
-                $message
+              'exception of type "%s" matches expected exception "%s"%s',
+
+              get_class($other),
+              $this->className,
+              $message
             );
         }
 
         return sprintf(
-            'exception of type "%s" is thrown',
-            $this->className
+          'exception of type "%s" is thrown',
+
+          $this->className
         );
     }
 
@@ -122,8 +124,9 @@ class PHPUnit_Framework_Constraint_Exception extends PHPUnit_Framework_Constrain
     public function toString()
     {
         return sprintf(
-            'exception of type "%s"',
-            $this->className
+          'exception of type "%s"',
+
+          $this->className
         );
     }
 }

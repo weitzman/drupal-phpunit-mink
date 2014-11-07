@@ -12,8 +12,7 @@ use Drupal\Core\Render\Element\RenderElement;
 /**
  * Provides a render element for the default Drupal toolbar.
  *
- * @todo Annotate once https://www.drupal.org/node/2326409 is in.
- *   RenderElement("toolbar")
+ * @RenderElement("toolbar")
  */
 class Toolbar extends RenderElement {
 
@@ -65,7 +64,7 @@ class Toolbar extends RenderElement {
    * @return array
    *  A renderable array.
    *
-   * @see toolbar_page_build().
+   * @see toolbar_page_top().
    */
   public static function preRenderToolbar($element) {
     // Get the configured breakpoints to switch from vertical to horizontal

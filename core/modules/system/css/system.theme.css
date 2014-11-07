@@ -407,6 +407,10 @@ ul.links a.active {
   margin: 0;
   padding: 0;
 }
+[dir="rtl"] .breadcrumb ol {
+  /* This is required to win over specifity of [dir="rtl"] ol */
+  margin-right: 0;
+}
 .breadcrumb li {
   display: inline;
   list-style-type: none;
@@ -460,6 +464,10 @@ ul.tabs {
   list-style: none;
   padding: 0;
   margin: 1em 0;
+}
+[dir="rtl"] .action-links {
+  /* This is required to win over specifity of [dir="rtl"] ul */
+  margin-right: 0;
 }
 .action-links li {
   display: inline-block;
@@ -588,18 +596,19 @@ table tr.error {
 .field-label-inline .field-label,
 .field-label-inline .field-items {
   float:left; /*LTR*/
-  padding-right: 0.5em;
+  margin-right: 0.5em; /*LTR*/
 }
 [dir="rtl"] .field-label-inline .field-label,
 [dir="rtl"] .field-label-inline .field-items {
   float: right;
-  padding-left: 0.5em;
+  margin-left: 0.5em;
+  margin-right: 0;
+}
+.field-label-inline .field-label::after {
+  content: ':';
 }
 
 /* Form display */
-form .field-edit-link {
-  margin: 0 0.3em;
-}
 form .field-multiple-table {
   margin: 0;
 }

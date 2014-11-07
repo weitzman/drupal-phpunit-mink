@@ -7,6 +7,7 @@
 
 namespace Drupal\simpletest;
 
+use Behat\Mink\Exception\Exception;
 use Behat\Mink\Mink;
 use Behat\Mink\Session;
 use Behat\Mink\Element\Element;
@@ -23,9 +24,6 @@ use Drupal\Component\Utility\String;
 use Drupal\Core\Session\UserSession;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\Test\TestRunnerKernel;
-use Drupal\simpletest\RemoteCoverage\RemoteCoverageHelper;
-use Drupal\simpletest\RemoteCoverage\RemoteCoverageTool;
-use Drupal\simpletest\RemoteCoverage\RemoteUrl;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -176,25 +174,11 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
   protected $mink;
 
   /**
-   * Remote coverage helper.
-   *
-   * @var RemoteCoverageHelper
-   */
-  protected $remoteCoverageHelper;
-
-  /**
    * Test ID.
    *
    * @var string
    */
-  private $testId;
-
-  /**
-   * Remote coverage collection url.
-   *
-   * @var string Override to provide code coverage data from the server
-   */
-  private $remoteCoverageScriptUrl;
+  protected $testId;
 
   /**
    * Constructor for \Drupal\simpletest\BrowserTestBase.
@@ -220,10 +204,6 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     // Install drupal test site.
     $this->prepareEnvironment();
     $this->installDrupal();
-
-    // Setup remote code coverage.
-    $this->remoteCoverageScriptUrl = $base_url;
-    $this->remoteCoverageHelper = new RemoteCoverageHelper(new RemoteUrl());
 
     // Setup Mink.
     $driver = new GoutteDriver();
@@ -279,22 +259,26 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
   /**
    * Returns Mink session.
    *
-   * @param string|null $name name of the session OR active session will be used
+   * @param string|null $name
+   *   Name of the session OR active session will be used.
    *
-   * @return Session
+   * @return \Behat\Mink\Session
+   *   The active mink session object.
    */
-  public function getSession($name = null) {
+  public function getSession($name = NULL) {
     return $this->mink->getSession($name);
   }
 
   /**
    * Returns Mink assert session.
    *
-   * @param string|null $name name of the session OR active session will be used
+   * @param string|null $name
+   *   (optional) Name of the session. Defaults to the active session.
    *
-   * @return WebAssert
+   * @return \Drupal\Simpletest\WebAssert
+   *   A new web-assert option for asserting the presence of elements with.
    */
-  public function assertSession($name = null) {
+  public function assertSession($name = NULL) {
     return $this->mink->assertSession($name);
   }
 
@@ -348,7 +332,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
   /**
    * Takes a path and returns an absolute path.
    *
-   * @param $path
+   * @param string $path
    *   A path from the internal browser content.
    *
    * @return string
@@ -430,7 +414,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    *   (optional) The role ID (machine name). Defaults to a random name.
    * @param string $name
    *   (optional) The label for the role. Defaults to a random string.
-   * @param integer $weight
+   * @param int $weight
    *   (optional) The weight for the role. Defaults NULL so that entity_create()
    *   sets the weight to maximum + 1.
    *
@@ -455,6 +439,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     }
 
     // Create new role.
+    /* @var \Drupal\user\RoleInterface $role */
     $role = entity_create('user_role', array(
       'id' => $rid,
       'label' => $name,
@@ -615,11 +600,11 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     // Make a request to the logout page, and redirect to the user page, the
     // idea being if you were properly logged out you should be seeing a login
     // screen.
-    $assertSession = $this->assertSession();
+    $assert_session = $this->assertSession();
     $this->drupalGet('user/logout', array('query' => array('destination' => 'user')));
-    $assertSession->statusCodeEquals(200);
-    $assertSession->fieldExists('name');
-    $assertSession->fieldExists('pass');
+    $assert_session->statusCodeEquals(200);
+    $assert_session->fieldExists('name');
+    $assert_session->fieldExists('pass');
 
     // @see WebTestBase::drupalUserIsLoggedIn()
     unset($this->loggedInUser->session_id);
@@ -630,19 +615,19 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
   /**
    * Fill and submit a form.
    *
-   * @param  $edit
+   * @param array $edit
    *   Field data in an associative array. Changes the current input fields
    *   (where possible) to the values indicated.
    *
    *   A checkbox can be set to TRUE to be checked and should be set to FALSE to
    *   be unchecked.
-   * @param $submit
+   * @param string $submit
    *   Value of the submit button whose click is to be emulated. For example,
    *   t('Save'). The processing of the request depends on this value. For
    *   example, a form may have one button with the value t('Save') and another
    *   button with the value t('Delete'), and execute different code depending
    *   on which one is clicked.
-   * @param $form_html_id
+   * @param string $form_html_id
    *   (optional) HTML ID of the form to be submitted. On some pages
    *   there are many identical forms, so just using the value of the submit
    *   button is not enough. For example: 'trigger-node-presave-assign-form'.
@@ -651,21 +636,21 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    *   underscores.
    */
   protected function submitForm($edit, $submit, $form_html_id = NULL) {
-    $assertSession = $this->assertSession();
+    $assert_session = $this->assertSession();
 
     // Get the form.
     if (isset($form_html_id)) {
-      $form = $assertSession->elementExists('xpath', "//form[@id='" . $form_html_id . "']");
-      $submit_button = $assertSession->buttonExists($submit, $form);
+      $form = $assert_session->elementExists('xpath', "//form[@id='" . $form_html_id . "']");
+      $submit_button = $assert_session->buttonExists($submit, $form);
     }
     else {
-      $submit_button = $assertSession->buttonExists($submit);
-      $form = $assertSession->elementExists('xpath', './ancestor::form', $submit_button);
+      $submit_button = $assert_session->buttonExists($submit);
+      $form = $assert_session->elementExists('xpath', './ancestor::form', $submit_button);
     }
 
     // Edit the form values.
     foreach ($edit as $name => $value) {
-      $field = $assertSession->fieldExists($name, $form);
+      $field = $assert_session->fieldExists($name, $form);
       $field->setValue($value);
     }
 
@@ -693,7 +678,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
       $select = $this->assertSession()->selectExists($select, $container);
     }
     $options = [];
-    /** @var NodeElement $option */
+    /* @var \Behat\Mink\Element\NodeElement $option */
     foreach ($select->findAll('xpath', '//option') as $option) {
       $label = $option->getText();
       $value = $option->getAttribute('value') ?: $label;
@@ -703,7 +688,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
   }
 
   /**
-   * {inheritdoc}
+   * {@inheritdoc}
    */
   public function run(\PHPUnit_Framework_TestResult $result = NULL) {
     if ($result === NULL) {
@@ -711,65 +696,23 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     }
 
     parent::run($result);
-
-    if ($result->getCollectCodeCoverageInformation()) {
-      $result->getCodeCoverage()
-        ->append($this->getRemoteCodeCoverageInformation(), $this);
-    }
-
     return $result;
   }
 
   /**
-   * Returns remote code coverage information.
-   *
-   * @return array
-   * @throws \RuntimeException When no remote coverage script URL set.
-   */
-  public function getRemoteCodeCoverageInformation() {
-    if ($this->remoteCoverageScriptUrl == '') {
-      throw new \RuntimeException('Remote coverage script url not set');
-    }
-
-    return $this->remoteCoverageHelper->get($this->remoteCoverageScriptUrl, $this->testId);
-  }
-
-  /**
-   * Override to tell remote website, that code coverage information needs to be collected.
+   * Override to use Mink exceptions.
    *
    * @return mixed
+   *   Either a test result or NULL.
    * @throws \Exception When exception was thrown inside the test.
    */
   protected function runTest() {
-    if ($this->getCollectCodeCoverageInformation()) {
-      $this->testId = get_class($this) . '__' . $this->getName();
-
-      $session = $this->getSession();
-      $session->setCookie(RemoteCoverageTool::TEST_ID_VARIABLE, $this->testId);
-    }
-
     try {
       return parent::runTest();
     }
-    catch (\Behat\Mink\Exception\Exception $e) {
+    catch (Exception $e) {
       throw new \PHPUnit_Framework_AssertionFailedError($e->getMessage());
     }
-  }
-
-  /**
-   * Whatever or not code coverage information should be gathered.
-   *
-   * @return boolean
-   * @throws \RuntimeException When used before test is started.
-   */
-  public function getCollectCodeCoverageInformation() {
-    $result = $this->getTestResultObject();
-
-    if (!is_object($result)) {
-      throw new \RuntimeException('Test must be started before attempting to collect coverage information');
-    }
-
-    return $result->getCollectCodeCoverageInformation();
   }
 
   /**
@@ -846,8 +789,8 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
       // Copy the testing-specific settings.php overrides in place.
       copy($settings_testing_file, $directory . '/settings.testing.php');
       // Add the name of the testing class to settings.php and include the
-      // testing specific overrides
-      file_put_contents($directory . '/settings.php', "\n\$test_class = '" . get_class($this) ."';\n" . 'include DRUPAL_ROOT . \'/\' . $site_path . \'/settings.testing.php\';' ."\n", FILE_APPEND);
+      // testing specific overrides.
+      file_put_contents($directory . '/settings.php', "\n\$test_class = '" . get_class($this) . "';\n" . 'include DRUPAL_ROOT . \'/\' . $site_path . \'/settings.testing.php\';' . "\n", FILE_APPEND);
     }
     $settings_services_file = DRUPAL_ROOT . '/' . $this->originalSite . '/testing.services.yml';
     if (file_exists($settings_services_file)) {
@@ -1002,8 +945,6 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    * on the database prefix, all tests (even unit tests) need to have one, in
    * order to access and read the error log.
    *
-   * @see TestBase::prepareEnvironment()
-   *
    * The generated database table prefix is used for the Drupal installation
    * being performed for the test. It is also used as user agent HTTP header
    * value by the cURL-based browser of DrupalWebTestCase, which is sent to the
@@ -1013,6 +954,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    *
    * @see WebTestBase::curlInitialize()
    * @see drupal_valid_test_ua()
+   * @see \Drupal\simpletest\TestBase::prepareEnvironment
    */
   private function prepareDatabasePrefix() {
     // Ensure that the generated test site directory does not exist already,
@@ -1234,7 +1176,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    *
    * @param bool $clean_urls
    *   Whether to mock the request using clean urls.
-   * @param $override_server_vars
+   * @param array $override_server_vars
    *   An array of server variables to override.
    *
    * @return Request

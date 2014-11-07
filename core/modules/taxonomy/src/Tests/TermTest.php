@@ -10,8 +10,10 @@ namespace Drupal\taxonomy\Tests;
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\String;
 use Drupal\Component\Utility\Tags;
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\taxonomy\Entity\Term;
 
 /**
  * Tests load, save and delete for taxonomy terms.
@@ -84,7 +86,7 @@ class TermTest extends TaxonomyTestBase {
     $this->assertTrue(isset($parents[$term1->id()]), 'Parent found correctly.');
 
     // Load and save a term, confirming that parents are still set.
-    $term = entity_load('taxonomy_term', $term2->id());
+    $term = Term::load($term2->id());
     $term->save();
     $parents = taxonomy_term_load_parents($term2->id());
     $this->assertTrue(isset($parents[$term1->id()]), 'Parent found correctly.');
@@ -120,7 +122,7 @@ class TermTest extends TaxonomyTestBase {
       $term = $this->createTerm($this->vocabulary, $edit);
       $children = taxonomy_term_load_children($term1->id());
       $parents = taxonomy_term_load_parents($term->id());
-      $terms_array[$x] = taxonomy_term_load($term->id());
+      $terms_array[$x] = Term::load($term->id());
     }
 
     // Get Page 1.
@@ -534,7 +536,7 @@ class TermTest extends TaxonomyTestBase {
     $this->assertFalse($terms, 'No term loaded with an invalid name.');
 
     // Try to load the term using a substring of the name.
-    $terms = taxonomy_term_load_multiple_by_name(drupal_substr($term->getName(), 2), 'No term loaded with a substring of the name.');
+    $terms = taxonomy_term_load_multiple_by_name(Unicode::substr($term->getName(), 2), 'No term loaded with a substring of the name.');
     $this->assertFalse($terms);
 
     // Create a new term in a different vocabulary with the same name.

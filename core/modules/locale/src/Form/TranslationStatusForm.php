@@ -82,7 +82,7 @@ class TranslationStatusForm extends FormBase {
 
       // Build data options for the select table.
       foreach ($updates as $langcode => $update) {
-        $title = String::checkPlain($languages[$langcode]->name);
+        $title = String::checkPlain($languages[$langcode]->getName());
         $locale_translation_update_info = array('#theme' => 'locale_translation_update_info');
         foreach (array('updates', 'not_found') as $update_status) {
           if (isset($update[$update_status])) {
@@ -105,7 +105,7 @@ class TranslationStatusForm extends FormBase {
         if (!empty($update['not_found'])) {
           $languages_not_found[$langcode] = $langcode;
         }
-        elseif (!empty($update['updates'])) {
+        if (!empty($update['updates'])) {
           $languages_update[$langcode] = $langcode;
         }
       }
@@ -215,7 +215,7 @@ class TranslationStatusForm extends FormBase {
           $remote = isset($project_info->files[LOCALE_TRANSLATION_REMOTE]) ? $project_info->files[LOCALE_TRANSLATION_REMOTE] : NULL;
           $recent = _locale_translation_source_compare($local, $remote) == LOCALE_TRANSLATION_SOURCE_COMPARE_LT ? $remote : $local;
           $updates[$langcode]['updates'][] = array(
-            'name' => $project_data[$project_info->name]->info['name'],
+            'name' => $project_info->name == 'drupal' ? $this->t('Drupal core') : $project_data[$project_info->name]->info['name'],
             'version' => $project_info->version,
             'timestamp' => $recent->timestamp,
           );

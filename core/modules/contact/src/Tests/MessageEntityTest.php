@@ -7,7 +7,7 @@
 namespace Drupal\contact\Tests;
 
 use Drupal\contact\Entity\Message;
-use Drupal\simpletest\DrupalUnitTestBase;
+use Drupal\simpletest\KernelTestBase;
 
 /**
  * Tests the message entity class.
@@ -15,14 +15,20 @@ use Drupal\simpletest\DrupalUnitTestBase;
  * @group contact
  * @see \Drupal\contact\Entity\Message
  */
-class MessageEntityTest extends DrupalUnitTestBase {
+class MessageEntityTest extends KernelTestBase {
 
   /**
    * Modules to enable.
    *
    * @var array
    */
-  public static $modules = array('system', 'contact', 'field', 'user');
+  public static $modules = array(
+    'system',
+    'contact',
+    'field',
+    'user',
+    'contact_test',
+  );
 
   protected function setUp() {
     parent::setUp();

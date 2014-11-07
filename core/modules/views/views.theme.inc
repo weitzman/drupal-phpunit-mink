@@ -42,14 +42,6 @@ function template_preprocess_views_view(&$variables) {
     $variables['attributes']['class'][] = $variables['css_class'];
   }
 
-  // Add contextual links to the view. We need to attach them to the dummy
-  // $view_array variable, since contextual_preprocess() requires that they be
-  // attached to an array (not an object) in order to process them. For our
-  // purposes, it doesn't matter what we attach them to, since once they are
-  // processed by contextual_preprocess() they will appear in the $title_suffix
-  // variable (which we will then render in views-view.html.twig).
-  views_add_contextual_links($variables['view_array'], 'view', $view, $view->current_display);
-
   // Attachments are always updated with the outer view, never by themselves,
   // so they do not have dom ids.
   if (empty($view->is_attachment)) {
@@ -873,7 +865,7 @@ function template_preprocess_views_view_rss(&$variables) {
   // The RSS 2.0 "spec" doesn't indicate HTML can be used in the description.
   // We strip all HTML tags, but need to prevent double encoding from properly
   // escaped source data (such as &amp becoming &amp;amp;).
-  $variables['description'] = String::checkPlain(decode_entities(strip_tags($style->getDescription())));
+  $variables['description'] = String::checkPlain(String::decodeEntities(strip_tags($style->getDescription())));
 
   if ($view->display_handler->getOption('sitename_title')) {
     $title = $config->get('name');
@@ -909,7 +901,7 @@ function template_preprocess_views_view_rss(&$variables) {
     $variables['link'] = check_url(_url($path, $url_options));
   }
 
-  $variables['langcode'] = String::checkPlain(\Drupal::languageManager()->getCurrentLanguage()->id);
+  $variables['langcode'] = String::checkPlain(\Drupal::languageManager()->getCurrentLanguage()->getId());
   $variables['namespaces'] = new Attribute($style->namespaces);
   $variables['items'] = $items;
   $variables['channel_elements'] = format_xml_elements($style->channel_elements);
@@ -1035,87 +1027,31 @@ function template_preprocess_views_mini_pager(&$variables) {
   $element = $variables['element'];
   $parameters = $variables['parameters'];
 
-  // Fill in default link labels.
-  $tags += array(
-    1 => t('‹‹'),
-    3 => t('››'),
-  );
-
   // Current is the page we are currently paged to.
-  $pager_current = $pager_page_array[$element] + 1;
+  $variables['items']['current'] = $pager_page_array[$element] + 1;
 
-  $li_previous = array();
   if ($pager_total[$element] > 1 && $pager_page_array[$element] > 0) {
-    $li_previous = array(
-      '#type' => 'link',
-      '#title' => $tags[1],
-      '#route_name' => '<current>',
-      '#options' => array(
-        'query' => pager_query_add_page($parameters, $element, $pager_page_array[$element] - 1),
-        'attributes' => array(
-          'title' => t('Go to previous page'),
-          'rel' => 'prev',
-        ),
-        // Below is ignored by default, supplied to support hook_link_alter
-        // implementations.
-        'pager_context' => array(
-          'link_type' => 'previous',
-          'element' => $element,
-          'interval' => -1,
-        ),
-      ),
+    $options = array(
+      'query' => pager_query_add_page($parameters, $element, $pager_page_array[$element] - 1),
     );
+    $variables['items']['previous']['href'] = \Drupal::url('<current>', [], $options);
+    if (isset($tags[1])) {
+      $variables['items']['previous']['text'] = $tags[1];
+    }
+    $variables['items']['previous']['attributes'] = new Attribute();
   }
 
   $li_next = array();
   if ($pager_page_array[$element] < ($pager_total[$element] - 1)) {
-    $li_next = array(
-      '#type' => 'link',
-      '#title' => $tags[3],
-      '#route_name' => '<current>',
-      '#options' => array(
-        'query' => pager_query_add_page($parameters, $element, $pager_page_array[$element] + 1),
-        'attributes' => array(
-          'title' => t('Go to next page'),
-          'rel' => 'next',
-        ),
-        // Below is ignored by default, supplied to support hook_link_alter
-        // implementations.
-        'pager_context' => array(
-          'link_type' => 'next',
-          'element' => $element,
-          'interval' => 1,
-        ),
-      ),
+    $options = array(
+      'query' => pager_query_add_page($parameters, $element, $pager_page_array[$element] + 1),
     );
+    $variables['items']['next']['href'] = \Drupal::url('<current>', [], $options);
+    if (isset($tags[3])) {
+      $variables['items']['next']['text'] = $tags[3];
+    }
+    $variables['items']['next']['attributes'] = new Attribute();
   }
-
-  // Don't show the pager if there is neither a next page nor a previous page
-  // link, which means that we are on the first page and there is no next page
-  // available/wanted.
-  if (empty($li_next) && empty($li_previous)) {
-    return;
-  }
-
-  $items = array();
-  $items[] = array(
-    '#wrapper_attributes' => array('class' => array('pager-previous')),
-  ) + $li_previous;
-
-  $items[] = array(
-    '#wrapper_attributes' => array('class' => array('pager-current')),
-    '#markup' => t('Page @current', array('@current' => $pager_current)),
-  );
-
-  $items[] = array(
-    '#wrapper_attributes' => array('class' => array('pager-next')),
-  ) + $li_next;
-
-  $variables['items'] = array(
-    '#theme' => 'item_list__pager',
-    '#items' => $items,
-    '#attributes' => array('class' => array('pager')),
-  );
 }
 
 /**
