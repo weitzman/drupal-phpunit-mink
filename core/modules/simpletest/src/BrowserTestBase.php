@@ -7,6 +7,7 @@
 
 namespace Drupal\simpletest;
 
+use Behat\Mink\Exception\Exception;
 use Behat\Mink\Mink;
 use Behat\Mink\Session;
 use Behat\Mink\Element\Element;
@@ -23,9 +24,6 @@ use Drupal\Component\Utility\String;
 use Drupal\Core\Session\UserSession;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\Test\TestRunnerKernel;
-use Drupal\simpletest\RemoteCoverage\RemoteCoverageHelper;
-use Drupal\simpletest\RemoteCoverage\RemoteCoverageTool;
-use Drupal\simpletest\RemoteCoverage\RemoteUrl;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -175,26 +173,12 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    */
   protected $mink;
 
-  /**
-   * Remote coverage helper.
-   *
-   * @var RemoteCoverageHelper
-   */
-  protected $remoteCoverageHelper;
-
-  /**
+    /**
    * Test ID.
    *
    * @var string
    */
   private $testId;
-
-  /**
-   * Remote coverage collection url.
-   *
-   * @var string Override to provide code coverage data from the server
-   */
-  private $remoteCoverageScriptUrl;
 
   /**
    * Constructor for \Drupal\simpletest\BrowserTestBase.
@@ -220,10 +204,6 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     // Install drupal test site.
     $this->prepareEnvironment();
     $this->installDrupal();
-
-    // Setup remote code coverage.
-    $this->remoteCoverageScriptUrl = $base_url;
-    $this->remoteCoverageHelper = new RemoteCoverageHelper(new RemoteUrl());
 
     // Setup Mink.
     $driver = new GoutteDriver();
@@ -711,47 +691,20 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     }
 
     parent::run($result);
-
-    if ($result->getCollectCodeCoverageInformation()) {
-      $result->getCodeCoverage()
-        ->append($this->getRemoteCodeCoverageInformation(), $this);
-    }
-
     return $result;
   }
 
   /**
-   * Returns remote code coverage information.
-   *
-   * @return array
-   * @throws \RuntimeException When no remote coverage script URL set.
-   */
-  public function getRemoteCodeCoverageInformation() {
-    if ($this->remoteCoverageScriptUrl == '') {
-      throw new \RuntimeException('Remote coverage script url not set');
-    }
-
-    return $this->remoteCoverageHelper->get($this->remoteCoverageScriptUrl, $this->testId);
-  }
-
-  /**
-   * Override to tell remote website, that code coverage information needs to be collected.
+   * Override to use Mink exceptions.
    *
    * @return mixed
    * @throws \Exception When exception was thrown inside the test.
    */
   protected function runTest() {
-    if ($this->getCollectCodeCoverageInformation()) {
-      $this->testId = get_class($this) . '__' . $this->getName();
-
-      $session = $this->getSession();
-      $session->setCookie(RemoteCoverageTool::TEST_ID_VARIABLE, $this->testId);
-    }
-
     try {
       return parent::runTest();
     }
-    catch (\Behat\Mink\Exception\Exception $e) {
+    catch (Exception $e) {
       throw new \PHPUnit_Framework_AssertionFailedError($e->getMessage());
     }
   }

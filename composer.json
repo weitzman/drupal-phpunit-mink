@@ -36,8 +36,7 @@
     "psr-4": {
       "Drupal\\Core\\": "core/lib/Drupal/Core",
       "Drupal\\Component\\": "core/lib/Drupal/Component",
-      "Drupal\\Driver\\": "drivers/lib/Drupal/Driver",
-      "Drupal\\simpletest\\RemoteCoverage\\": "core/modules/simpletest/src/RemoteCoverage"
+      "Drupal\\Driver\\": "drivers/lib/Drupal/Driver"
     },
     "files": [
       "core/lib/Drupal.php"
