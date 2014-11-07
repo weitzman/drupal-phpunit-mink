@@ -34,14 +34,14 @@ class Language implements LanguageInterface {
    *
    * @var string
    */
-  public $name = '';
+  protected $name = '';
 
   /**
    * The ID, langcode.
    *
    * @var string
    */
-  public $id = '';
+  protected $id = '';
 
   /**
    * The direction, left-to-right, or right-to-left.
@@ -50,14 +50,14 @@ class Language implements LanguageInterface {
    *
    * @var int
    */
-  public $direction = self::DIRECTION_LTR;
+  protected $direction = self::DIRECTION_LTR;
 
   /**
    * The weight, used for ordering languages in lists, like selects or tables.
    *
    * @var int
    */
-  public $weight = 0;
+  protected $weight = 0;
 
   /**
    * Locked indicates a language used by the system, not an actual language.
@@ -80,7 +80,9 @@ class Language implements LanguageInterface {
   public function __construct(array $values = array()) {
     // Set all the provided properties for the language.
     foreach ($values as $key => $value) {
-      $this->{$key} = $value;
+      if (property_exists($this, $key)) {
+        $this->{$key} = $value;
+      }
     }
     // If some values were not set, set sane defaults of a predefined language.
     if (!isset($values['name']) || !isset($values['direction'])) {
@@ -101,6 +103,15 @@ class Language implements LanguageInterface {
    */
   public function getName() {
     return $this->name;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setName($name) {
+    $this->name = $name;
+
+    return $this;
   }
 
   /**

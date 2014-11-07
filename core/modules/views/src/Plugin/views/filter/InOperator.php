@@ -102,7 +102,7 @@ class InOperator extends FilterPluginBase {
 
     $options['operator']['default'] = 'in';
     $options['value']['default'] = array();
-    $options['expose']['contains']['reduce'] = array('default' => FALSE, 'bool' => TRUE);
+    $options['expose']['contains']['reduce'] = array('default' => FALSE);
 
     return $options;
   }
@@ -367,7 +367,7 @@ class InOperator extends FilterPluginBase {
           if ($values !== '') {
             $values .= ', ';
           }
-          if (drupal_strlen($values) > 8) {
+          if (Unicode::strlen($values) > 8) {
             $values = Unicode::truncate($values, 8, FALSE, TRUE);
             break;
           }

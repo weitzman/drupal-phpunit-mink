@@ -40,7 +40,6 @@
  *   view and edit tabs when displaying a node).
  * - action_links: Actions local to the page, such as "Add menu" on the menu
  *   administration interface.
- * - feed_icons: All feed icons for the current page.
  * - node: Fully loaded node, if there is an automatically-loaded node
  *   associated with the page and the node ID is the second argument in the
  *   page's path (e.g. node/12345 and node/12345/revisions, but not
@@ -60,7 +59,7 @@
  * @see html.html.twig
  */
 #}
-  <header id="branding" class="clearfix">
+  <header class="content-header clearfix">
     <div class="layout-container">
       {{ title_prefix }}
       {% if title %}
@@ -80,11 +79,11 @@
 
     {{ breadcrumb }}
 
-    <main id="content" class="clearfix" role="main">
+    <main class="page-content clearfix" role="main">
       <div class="visually-hidden"><a id="main-content" tabindex="-1"></a></div>
       {{ messages }}
       {% if page.help %}
-        <div id="help">
+        <div class="help">
           {{ page.help }}
         </div>
       {% endif %}
@@ -95,10 +94,5 @@
       {% endif %}
       {{ page.content }}
     </main>
-    {% if feed_icons %}
-      <footer id="footer" role="contentinfo" class="layout-column">
-          {{ feed_icons }}
-      </footer>
-    {% endif %}
 
   </div>

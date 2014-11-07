@@ -24,7 +24,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  *   title = @Translation("Feed"),
  *   help = @Translation("Display the view as a feed, such as an RSS feed."),
  *   uses_route = TRUE,
- *   admin = @Translation("Feed")
+ *   admin = @Translation("Feed"),
+ *   returns_response = TRUE
  * )
  */
 class Feed extends PathPluginBase {
@@ -80,7 +81,7 @@ class Feed extends PathPluginBase {
 
     $response = $this->view->getResponse();
 
-    $response->setContent(drupal_render($output));
+    $response->setContent(drupal_render_root($output));
 
     return $response;
   }
@@ -94,7 +95,7 @@ class Feed extends PathPluginBase {
     if (!empty($this->view->live_preview)) {
       $output = array(
         '#prefix' => '<pre>',
-        '#markup' => String::checkPlain(drupal_render($output)),
+        '#markup' => String::checkPlain(drupal_render_root($output)),
         '#suffix' => '</pre>',
       );
     }

@@ -72,4 +72,5 @@ class FailureTest extends PHPUnit_Framework_TestCase
     {
         $this->assertStringMatchesFormatFile(__DIR__ . '/expectedFileFormat.txt', '...BAR...');
     }
+
 }

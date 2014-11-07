@@ -7,6 +7,7 @@
 
 namespace Drupal\field\Tests;
 
+use Drupal\Component\Utility\Unicode;
 use Drupal\language\Entity\ConfigurableLanguage;
 
 /**
@@ -75,7 +76,7 @@ class TranslationTest extends FieldUnitTestBase {
 
     $this->installConfig(array('language'));
 
-    $this->field_name = drupal_strtolower($this->randomMachineName());
+    $this->field_name = Unicode::strtolower($this->randomMachineName());
 
     $this->entity_type = 'entity_test';
 
@@ -138,7 +139,7 @@ class TranslationTest extends FieldUnitTestBase {
     }
 
     // Test default values.
-    $field_name_default = drupal_strtolower($this->randomMachineName() . '_field_name');
+    $field_name_default = Unicode::strtolower($this->randomMachineName() . '_field_name');
     $field_storage_definition = $this->field_storage_definition;
     $field_storage_definition['field_name'] = $field_name_default;
     $field_storage = entity_create('field_storage_config', $field_storage_definition);
@@ -167,7 +168,7 @@ class TranslationTest extends FieldUnitTestBase {
 
     // @todo Test every translation once the Entity Translation API allows for
     //   multilingual defaults.
-    $langcode = $entity->language()->id;
+    $langcode = $entity->language()->getId();
     $this->assertEqual($entity->getTranslation($langcode)->{$field_name_default}->getValue(), $field->default_value, format_string('Default value correctly populated for language %language.', array('%language' => $langcode)));
 
     // Check that explicit empty values are not overridden with default values.

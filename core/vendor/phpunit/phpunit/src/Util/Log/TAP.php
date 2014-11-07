@@ -109,7 +109,7 @@ class PHPUnit_Util_Log_TAP extends PHPUnit_Util_Printer implements PHPUnit_Frame
         $this->writeNotOk($test, 'Failure');
 
         $message = explode(
-            "\n", PHPUnit_Framework_TestFailure::exceptionToString($e)
+          "\n", PHPUnit_Framework_TestFailure::exceptionToString($e)
         );
 
         $diagnostic = array(
@@ -131,10 +131,10 @@ class PHPUnit_Util_Log_TAP extends PHPUnit_Util_Printer implements PHPUnit_Frame
         $yaml = new Symfony\Component\Yaml\Dumper;
 
         $this->write(
-            sprintf(
-                "  ---\n%s  ...\n",
-                $yaml->dump($diagnostic, 2, 2)
-            )
+          sprintf(
+            "  ---\n%s  ...\n",
+            $yaml->dump($diagnostic, 2, 2)
+          )
         );
     }
 
@@ -161,11 +161,12 @@ class PHPUnit_Util_Log_TAP extends PHPUnit_Util_Printer implements PHPUnit_Frame
     public function addRiskyTest(PHPUnit_Framework_Test $test, Exception $e, $time)
     {
         $this->write(
-            sprintf(
-                "ok %d - # RISKY%s\n",
-                $this->testNumber,
-                $e->getMessage() != '' ? ' ' . $e->getMessage() : ''
-            )
+          sprintf(
+            "ok %d - # RISKY%s\n",
+
+            $this->testNumber,
+            $e->getMessage() != '' ? ' ' . $e->getMessage() : ''
+          )
         );
 
         $this->testSuccessful = false;
@@ -182,11 +183,12 @@ class PHPUnit_Util_Log_TAP extends PHPUnit_Util_Printer implements PHPUnit_Frame
     public function addSkippedTest(PHPUnit_Framework_Test $test, Exception $e, $time)
     {
         $this->write(
-            sprintf(
-                "ok %d - # SKIP%s\n",
-                $this->testNumber,
-                $e->getMessage() != '' ? ' ' . $e->getMessage() : ''
-            )
+          sprintf(
+            "ok %d - # SKIP%s\n",
+
+            $this->testNumber,
+            $e->getMessage() != '' ? ' ' . $e->getMessage() : ''
+          )
         );
 
         $this->testSuccessful = false;
@@ -237,11 +239,12 @@ class PHPUnit_Util_Log_TAP extends PHPUnit_Util_Printer implements PHPUnit_Frame
     {
         if ($this->testSuccessful === true) {
             $this->write(
-                sprintf(
-                    "ok %d - %s\n",
-                    $this->testNumber,
-                    PHPUnit_Util_Test::describe($test)
-                )
+              sprintf(
+                "ok %d - %s\n",
+
+                $this->testNumber,
+                PHPUnit_Util_Test::describe($test)
+              )
             );
         }
     }
@@ -254,13 +257,14 @@ class PHPUnit_Util_Log_TAP extends PHPUnit_Util_Printer implements PHPUnit_Frame
     protected function writeNotOk(PHPUnit_Framework_Test $test, $prefix = '', $directive = '')
     {
         $this->write(
-            sprintf(
-                "not ok %d - %s%s%s\n",
-                $this->testNumber,
-                $prefix != '' ? $prefix . ': ' : '',
-                PHPUnit_Util_Test::describe($test),
-                $directive != '' ? ' # ' . $directive : ''
-            )
+          sprintf(
+            "not ok %d - %s%s%s\n",
+
+            $this->testNumber,
+            $prefix != '' ? $prefix . ': ' : '',
+            PHPUnit_Util_Test::describe($test),
+            $directive != '' ? ' # ' . $directive : ''
+          )
         );
 
         $this->testSuccessful = false;

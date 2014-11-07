@@ -7,8 +7,7 @@
  * @requires function testFuncClass
  * @requires extension testExtClass
  */
-class RequirementsClassDocBlockTest
-{
+class RequirementsClassDocBlockTest {
 
     /**
      * @requires PHP 5.4
@@ -20,4 +19,7 @@ class RequirementsClassDocBlockTest
     public function testMethod()
     {
     }
+
 }
+
+

@@ -16,8 +16,7 @@ use Drupal\filter\Plugin\FilterInterface;
 /**
  * Provides a processed text render element.
  *
- * @todo Annotate once https://www.drupal.org/node/2326409 is in.
- *   RenderElement("processed_text")
+ * @RenderElement("processed_text")
  */
 class ProcessedText extends RenderElement {
 
@@ -130,7 +129,7 @@ class ProcessedText extends RenderElement {
       $cache_tags = Cache::mergeTags($cache_tags, $element['#cache']['tags']);
     }
     // Prepend the text format's cache tags array.
-    $cache_tags = Cache::mergeTags($cache_tags, $format->getCacheTag());
+    $cache_tags = Cache::mergeTags($cache_tags, $format->getCacheTags());
     $element['#cache']['tags'] = $cache_tags;
 
     // Collect all attached assets.

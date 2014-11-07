@@ -12,6 +12,7 @@ use Drupal\Component\Utility\String;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\DrupalKernel;
 use Drupal\Core\Extension\ExtensionDiscovery;
+use Drupal\Core\Logger\RfcLogLevel;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\Utility\Error;
 use Symfony\Component\ClassLoader\ApcClassLoader;
@@ -51,70 +52,6 @@ const ERROR_REPORTING_DISPLAY_ALL = 'all';
  * Error reporting level: display all messages, plus backtrace information.
  */
 const ERROR_REPORTING_DISPLAY_VERBOSE = 'verbose';
-
-/**
- * @defgroup logging_severity_levels Logging severity levels
- * @{
- * Logging severity levels as defined in RFC 3164.
- *
- * The WATCHDOG_* constant definitions correspond to the logging severity levels
- * defined in RFC 3164, section 4.1.1. PHP supplies predefined LOG_* constants
- * for use in the syslog() function, but their values on Windows builds do not
- * correspond to RFC 3164. The associated PHP bug report was closed with the
- * comment, "And it's also not a bug, as Windows just have less log levels,"
- * and "So the behavior you're seeing is perfectly normal."
- *
- * @see http://www.faqs.org/rfcs/rfc3164.html
- * @see http://bugs.php.net/bug.php?id=18090
- * @see http://php.net/manual/function.syslog.php
- * @see http://php.net/manual/network.constants.php
- * @see watchdog()
- * @see watchdog_severity_levels()
- */
-
-/**
- * Log message severity -- Emergency: system is unusable.
- */
-const WATCHDOG_EMERGENCY = 0;
-
-/**
- * Log message severity -- Alert: action must be taken immediately.
- */
-const WATCHDOG_ALERT = 1;
-
-/**
- * Log message severity -- Critical conditions.
- */
-const WATCHDOG_CRITICAL = 2;
-
-/**
- * Log message severity -- Error conditions.
- */
-const WATCHDOG_ERROR = 3;
-
-/**
- * Log message severity -- Warning conditions.
- */
-const WATCHDOG_WARNING = 4;
-
-/**
- * Log message severity -- Normal but significant conditions.
- */
-const WATCHDOG_NOTICE = 5;
-
-/**
- * Log message severity -- Informational messages.
- */
-const WATCHDOG_INFO = 6;
-
-/**
- * Log message severity -- Debug-level messages.
- */
-const WATCHDOG_DEBUG = 7;
-
-/**
- * @} End of "defgroup logging_severity_levels".
- */
 
 /**
  * First bootstrap phase: initialize configuration.
@@ -412,7 +349,7 @@ function drupal_page_get_cache(Request $request) {
  *   Use \Symfony\Component\HttpFoundation\Response->headers->set().
  *   See https://drupal.org/node/2181523.
  */
-function drupal_add_http_header($name, $value, $append = FALSE) {
+function _drupal_add_http_header($name, $value, $append = FALSE) {
   // The headers as name/value pairs.
   $headers = &drupal_static('drupal_http_headers', array());
 
@@ -477,99 +414,11 @@ function _drupal_set_preferred_header_name($name = NULL) {
 }
 
 /**
- * Sends the HTTP response headers that were previously set, adding defaults.
- *
- * Headers are set in drupal_add_http_header(). Default headers are not set
- * if they have been replaced or unset using drupal_add_http_header().
- *
- * @param array $default_headers
- *   (optional) An array of headers as name/value pairs.
- * @param bool $only_default
- *   (optional) If TRUE and headers have already been sent, send only the
- *   specified headers.
- *
- * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.
- *   See https://drupal.org/node/2181523.
- */
-function drupal_send_headers($default_headers = array(), $only_default = FALSE) {
-  $headers_sent = &drupal_static(__FUNCTION__, FALSE);
-  $headers = drupal_get_http_header();
-  if ($only_default && $headers_sent) {
-    $headers = array();
-  }
-  $headers_sent = TRUE;
-
-  $header_names = _drupal_set_preferred_header_name();
-  foreach ($default_headers as $name => $value) {
-    $name_lower = strtolower($name);
-    if (!isset($headers[$name_lower])) {
-      $headers[$name_lower] = $value;
-      $header_names[$name_lower] = $name;
-    }
-  }
-  foreach ($headers as $name_lower => $value) {
-    if ($name_lower == 'status') {
-      header($_SERVER['SERVER_PROTOCOL'] . ' ' . $value);
-    }
-    // Skip headers that have been unset.
-    elseif ($value !== FALSE) {
-      header($header_names[$name_lower] . ': ' . $value);
-    }
-  }
-}
-
-/**
- * Sets HTTP headers in preparation for a page response.
- *
- * Authenticated users are always given a 'no-cache' header, and will fetch a
- * fresh page on every request. This prevents authenticated users from seeing
- * locally cached pages.
- *
- * Also give each page a unique ETag. This should force clients to include both
- * an If-Modified-Since header and an If-None-Match header when doing
- * conditional requests for the page (required by RFC 2616, section 13.3.4),
- * making the validation more robust. This is a workaround for a bug in Mozilla
- * Firefox that is triggered when Drupal's caching is enabled and the user
- * accesses Drupal via an HTTP proxy (see
- * https://bugzilla.mozilla.org/show_bug.cgi?id=269303): When an authenticated
- * user requests a page, and then logs out and requests the same page again,
- * Firefox may send a conditional request based on the page that was cached
- * locally when the user was logged in. If this page did not have an ETag
- * header, the request only contains an If-Modified-Since header. The date will
- * be recent, because with authenticated users the Last-Modified header always
- * refers to the time of the request. If the user accesses Drupal via a proxy
- * server, and the proxy already has a cached copy of the anonymous page with an
- * older Last-Modified date, the proxy may respond with 304 Not Modified, making
- * the client think that the anonymous and authenticated pageviews are
- * identical.
- *
- * @see drupal_page_set_cache()
- *
- * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.
- *   See https://drupal.org/node/2181523.
- */
-function drupal_page_header() {
-  $headers_sent = &drupal_static(__FUNCTION__, FALSE);
-  if ($headers_sent) {
-    return TRUE;
-  }
-  $headers_sent = TRUE;
-
-  $default_headers = array(
-    'Expires' => 'Sun, 19 Nov 1978 05:00:00 GMT',
-    'Last-Modified' => gmdate(DateTimePlus::RFC7231, REQUEST_TIME),
-    'Cache-Control' => 'no-cache, must-revalidate, post-check=0, pre-check=0',
-    'ETag' => '"' . REQUEST_TIME . '"',
-  );
-  drupal_send_headers($default_headers);
-}
-
-/**
  * Sets HTTP headers in preparation for a cached page response.
  *
  * The headers allow as much as possible in proxies and browsers without any
  * particular knowledge about the pages. Modules can override these headers
- * using drupal_add_http_header().
+ * using _drupal_add_http_header().
  *
  * If the request is conditional (using If-Modified-Since and If-None-Match),
  * and the conditions match those currently in the cache, a 304 Not Modified
@@ -761,8 +610,7 @@ function request_uri($omit_query_string = FALSE) {
 /**
  * Logs an exception.
  *
- * This is a wrapper function for watchdog() which automatically decodes an
- * exception.
+ * This is a wrapper logging function which automatically decodes an exception.
  *
  * @param $type
  *   The category to which this message belongs.
@@ -780,10 +628,9 @@ function request_uri($omit_query_string = FALSE) {
  * @param $link
  *   A link to associate with the message.
  *
- * @see watchdog()
  * @see \Drupal\Core\Utility\Error::decodeException()
  */
-function watchdog_exception($type, Exception $exception, $message = NULL, $variables = array(), $severity = WATCHDOG_ERROR, $link = NULL) {
+function watchdog_exception($type, Exception $exception, $message = NULL, $variables = array(), $severity = RfcLogLevel::ERROR, $link = NULL) {
 
   // Use a default value if $message is not set.
   if (empty($message)) {
@@ -800,49 +647,6 @@ function watchdog_exception($type, Exception $exception, $message = NULL, $varia
   $variables += Error::decodeException($exception);
 
   \Drupal::logger($type)->log($severity, $message, $variables);
-}
-
-/**
- * Logs a system message.
- *
- * @param $type
- *   The category to which this message belongs. Can be any string, but the
- *   general practice is to use the name of the module calling watchdog().
- * @param $message
- *   The message to store in the log. Keep $message translatable
- *   by not concatenating dynamic values into it! Variables in the
- *   message should be added by using placeholder strings alongside
- *   the variables argument to declare the value of the placeholders.
- *   See t() for documentation on how $message and $variables interact.
- * @param $variables
- *   Array of variables to replace in the message on display or array() if
- *   message is already translated or not possible to translate.
- * @param $severity
- *   The severity of the message; one of the following values as defined in
- *   @link http://www.faqs.org/rfcs/rfc3164.html RFC 3164: @endlink
- *   - WATCHDOG_EMERGENCY: Emergency, system is unusable.
- *   - WATCHDOG_ALERT: Alert, action must be taken immediately.
- *   - WATCHDOG_CRITICAL: Critical conditions.
- *   - WATCHDOG_ERROR: Error conditions.
- *   - WATCHDOG_WARNING: Warning conditions.
- *   - WATCHDOG_NOTICE: (default) Normal but significant conditions.
- *   - WATCHDOG_INFO: Informational messages.
- *   - WATCHDOG_DEBUG: Debug-level messages.
- * @param $link
- *   A link to associate with the message.
- *
- * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.
- *   Use \Drupal::logger($channel)->log($severity, $message, $context), or any
- *   of the shortcut methods of \Psr\Log\LoggerTrait.
- *
- * @see watchdog_severity_levels()
- * @see hook_watchdog()
- */
-function watchdog($type, $message, array $variables = array(), $severity = WATCHDOG_NOTICE, $link = NULL) {
-  if ($link) {
-    $variables['link'] = $link;
-  }
-  \Drupal::service('logger.factory')->get($type)->log($severity, $message, $variables);
 }
 
 /**
@@ -898,7 +702,7 @@ function watchdog($type, $message, array $variables = array(), $severity = WATCH
  * @see theme_status_messages()
  */
 function drupal_set_message($message = NULL, $type = 'status', $repeat = FALSE) {
-  if ($message) {
+  if (isset($message)) {
     if (!isset($_SESSION['messages'][$type])) {
       $_SESSION['messages'][$type] = array();
     }
@@ -1273,7 +1077,7 @@ function drupal_installation_attempted() {
  * @param $flags
  *   (optional) Specifies the state of the languages that have to be returned.
  *   It can be: LanguageInterface::STATE_CONFIGURABLE,
- *   LanguageInterface::STATE_LOCKED, LanguageInterface::STATE_ALL.
+ *   LanguageInterface::STATE_LOCKED, or LanguageInterface::STATE_ALL.
  *
  * @return \Drupal\Core\Language\LanguageInterface[]
  *   An associative array of languages, keyed by the language code, ordered by

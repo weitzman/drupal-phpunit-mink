@@ -20,7 +20,7 @@ namespace Drupal\Core\TypedData;
  *
  * @ingroup typed_data
  */
-interface ListInterface extends TypedDataInterface, \ArrayAccess, \Countable, \Traversable {
+interface ListInterface extends TraversableTypedDataInterface, \ArrayAccess, \Countable {
 
   /**
    * Determines whether the list contains any non-empty items.
@@ -37,16 +37,6 @@ interface ListInterface extends TypedDataInterface, \ArrayAccess, \Countable, \T
    *   The data definition of contained items.
    */
   public function getItemDefinition();
-
-  /**
-   * React to changes to a child item.
-   *
-   * Note that this is invoked after any changes have been applied.
-   *
-   * @param $delta
-   *   The delta of the item which is changed.
-   */
-  public function onChange($delta);
 
   /**
    * Returns the item at the specified position in this list.

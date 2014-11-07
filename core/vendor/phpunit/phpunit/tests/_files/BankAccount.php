@@ -42,9 +42,7 @@
  * @since      File available since Release 2.3.0
  */
 
-class BankAccountException extends RuntimeException
-{
-}
+class BankAccountException extends RuntimeException {}
 
 /**
  * A bank account.

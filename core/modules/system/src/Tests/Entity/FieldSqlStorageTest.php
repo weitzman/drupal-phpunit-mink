@@ -7,6 +7,7 @@
 
 namespace Drupal\system\Tests\Entity;
 
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Entity\Exception\FieldStorageDefinitionUpdateForbiddenException;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -131,13 +132,13 @@ class FieldSqlStorageTest extends EntityUnitTestBase {
       for ($delta = 0; $delta <= $this->field_cardinality; $delta++) {
         $value = mt_rand(1, 127);
         $values[$revision_id][] = $value;
-        $query->values(array($bundle, 0, $entity->id(), $revision_id, $delta, $entity->language()->id, $value));
+        $query->values(array($bundle, 0, $entity->id(), $revision_id, $delta, $entity->language()->getId(), $value));
       }
       $query->execute();
     }
     $query = db_insert($this->table)->fields($columns);
     foreach ($values[$revision_id] as $delta => $value) {
-      $query->values(array($bundle, 0, $entity->id(), $revision_id, $delta, $entity->language()->id, $value));
+      $query->values(array($bundle, 0, $entity->id(), $revision_id, $delta, $entity->language()->getId(), $value));
     }
     $query->execute();
 
@@ -201,7 +202,7 @@ class FieldSqlStorageTest extends EntityUnitTestBase {
         'deleted' => 0,
         'entity_id' => $entity->id(),
         'revision_id' => $entity->getRevisionId(),
-        'langcode' => $entity->language()->id,
+        'langcode' => $entity->language()->getId(),
         'delta' => $delta,
         $this->field_name . '_value' => $values[$delta]['value'],
       );
@@ -224,7 +225,7 @@ class FieldSqlStorageTest extends EntityUnitTestBase {
         'deleted' => 0,
         'entity_id' => $entity->id(),
         'revision_id' => $entity->getRevisionId(),
-        'langcode' => $entity->language()->id,
+        'langcode' => $entity->language()->getId(),
         'delta' => $delta,
         $this->field_name . '_value' => $values[$delta]['value'],
       );
@@ -252,7 +253,7 @@ class FieldSqlStorageTest extends EntityUnitTestBase {
           'deleted' => 0,
           'entity_id' => $entity->id(),
           'revision_id' => $revision_id,
-          'langcode' => $entity->language()->id,
+          'langcode' => $entity->language()->getId(),
           'delta' => $delta,
           $this->field_name . '_value' => $values[$delta]['value'],
         );
@@ -276,7 +277,7 @@ class FieldSqlStorageTest extends EntityUnitTestBase {
     $storage = $this->container->get('entity.manager')->getStorage($entity_type);
 
     // Create two fields and generate random values.
-    $name_base = drupal_strtolower($this->randomMachineName(FieldStorageConfig::NAME_MAX_LENGTH - 1));
+    $name_base = Unicode::strtolower($this->randomMachineName(FieldStorageConfig::NAME_MAX_LENGTH - 1));
     $field_names = array();
     $values = array();
     for ($i = 0; $i < 2; $i++) {

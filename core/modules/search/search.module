@@ -85,7 +85,7 @@ function search_help($route_name, RouteMatchInterface $route_match) {
       $output .= '<dt>' . t('Displaying the Search block') . '</dt>';
       $output .= '<dd>' . t('The Search module includes a block, which can be enabled and configured on the <a href="!blocks">Block layout page</a>, if you have the Block module enabled; the default block title is Search, and it is the Search form block in the Forms category, if you wish to add another instance. The block is available to users with the <a href="!search_permission">Use search</a> permission, and it performs a search using the configured default search page.', array('!blocks' => (\Drupal::moduleHandler()->moduleExists('block')) ? \Drupal::url('block.admin_display') : '#', '!search_permission' => \Drupal::url('user.admin_permissions', array(), array('fragment' => 'module-search')))) . '</dd>';
       $output .= '<dt>' . t('Searching your site') . '</dt>';
-      $output .= '<dd>' . t('Users with <a href="!search_permission">Use search</a> permission can use the Search block and <a href="!search">Search page</a>. Users with the <a href="!node_permission">View published content</a> permission can use configured search pages of type <em>Content</em> to search for content containing exact keywords; in addition, users with <a href="!search_permission">Use advanced search</a> permission can use more complex search filtering. Users with the <a href="!user_permission">View user information</a> permission can use configured search pages of type <em>Users</em> to search for active users containing the keyword anywhere in the user name, and users with the <a href="!user_permission">Administer users</a> permission can search for active and blocked users, by email address or user name keyword.', array('!search' => \Drupal::url('search.view'), '!search_permission' => \Drupal::url('user.admin_permissions', array(), array('fragment' => 'module-search')), '!node_permission' => \Drupal::url('user.admin_permissions', array(), array('fragment' => 'module-node')), '!user_permission' => \Drupal::url('user.admin_permissions', array(), array('fragment' => 'module-user')))) . '</dd>';
+      $output .= '<dd>' . t('Users with <a href="!search_permission">Use search</a> permission can use the Search block and <a href="!search">Search page</a>. Users with the <a href="!node_permission">View published content</a> permission can use configured search pages of type <em>Content</em> to search for content containing exact keywords; in addition, users with <a href="!search_permission">Use advanced search</a> permission can use more complex search filtering. Users with the <a href="!user_permission">View user information</a> permission can use configured search pages of type <em>Users</em> to search for active users containing the keyword anywhere in the username, and users with the <a href="!user_permission">Administer users</a> permission can search for active and blocked users, by email address or username keyword.', array('!search' => \Drupal::url('search.view'), '!search_permission' => \Drupal::url('user.admin_permissions', array(), array('fragment' => 'module-search')), '!node_permission' => \Drupal::url('user.admin_permissions', array(), array('fragment' => 'module-node')), '!user_permission' => \Drupal::url('user.admin_permissions', array(), array('fragment' => 'module-user')))) . '</dd>';
       $output .= '<dt>' . t('Extending the Search module') . '</dt>';
       $output .= '<dd>' . t('By default, the Search module only supports exact keyword matching in content searches. You can modify this behavior by installing a language-specific stemming module for your language (such as <a href="!porterstemmer_url">Porter Stemmer</a> for American English), which allows words such as walk, walking, and walked to be matched in the Search module. Another approach is to use a third-party search technology with stemming or partial word matching features built in, such as <a href="!solr_url">Apache Solr</a> or <a href="!sphinx_url">Sphinx</a>. There are also contributed modules that provide additional search pages. These and other <a href="!contrib-search">search-related contributed modules</a> can be downloaded by visiting Drupal.org.', array('!contrib-search' => 'https://drupal.org/project/project_module?f[2]=im_vid_3%3A105', '!porterstemmer_url' => 'https://drupal.org/project/porterstemmer', '!solr_url' => 'https://drupal.org/project/apachesolr', '!sphinx_url' => 'https://drupal.org/project/sphinx')) . '</dd>';
       $output .= '</dl>';
@@ -104,7 +104,6 @@ function search_theme() {
     'search_result' => array(
       'variables' => array('result' => NULL, 'plugin_id' => NULL),
       'file' => 'search.pages.inc',
-      'template' => 'search-result',
     ),
   );
 }
@@ -242,10 +241,10 @@ function search_update_totals() {
  */
 function search_simplify($text, $langcode = NULL) {
   // Decode entities to UTF-8
-  $text = decode_entities($text);
+  $text = String::decodeEntities($text);
 
   // Lowercase
-  $text = drupal_strtolower($text);
+  $text = Unicode::strtolower($text);
 
   // Call an external processor for word handling.
   search_invoke_preprocess($text, $langcode);
@@ -307,7 +306,7 @@ function search_simplify($text, $langcode = NULL) {
 function search_expand_cjk($matches) {
   $min = \Drupal::config('search.settings')->get('index.minimum_word_size');
   $str = $matches[0];
-  $length = drupal_strlen($str);
+  $length = Unicode::strlen($str);
   // If the text is shorter than the minimum word size, don't tokenize it.
   if ($length <= $min) {
     return ' ' . $str . ' ';
@@ -317,7 +316,7 @@ function search_expand_cjk($matches) {
   $chars = array();
   for ($i = 0; $i < $length; $i++) {
     // Add the next character off the beginning of the string to the queue.
-    $current = drupal_substr($str, 0, 1);
+    $current = Unicode::substr($str, 0, 1);
     $str = substr($str, strlen($current));
     $chars[] = $current;
     if ($i >= $min - 1) {
@@ -358,7 +357,7 @@ function _search_index_truncate(&$text) {
   if (is_numeric($text)) {
     $text = ltrim($text, '0');
   }
-  $text = truncate_utf8($text, 50);
+  $text = Unicode::truncate($text, 50);
 }
 
 /**
@@ -416,7 +415,7 @@ function search_index($sid, $type, $text, $langcode) {
     if ($tag) {
       // Increase or decrease score per word based on tag
       list($tagname) = explode(' ', $value, 2);
-      $tagname = drupal_strtolower($tagname);
+      $tagname = Unicode::strtolower($tagname);
       // Closing or opening tag?
       if ($tagname[0] == '/') {
         $tagname = substr($tagname, 1);
@@ -454,7 +453,7 @@ function search_index($sid, $type, $text, $langcode) {
           // Add word to accumulator
           $accum .= $word . ' ';
           // Check wordlength
-          if (is_numeric($word) || drupal_strlen($word) >= $minimum_word_size) {
+          if (is_numeric($word) || Unicode::strlen($word) >= $minimum_word_size) {
             if (!isset($scored_words[$word])) {
               $scored_words[$word] = 0;
             }
@@ -583,7 +582,7 @@ function search_excerpt($keys, $text, $langcode = NULL) {
 
   // Prepare text by stripping HTML tags and decoding HTML entities.
   $text = strip_tags(str_replace(array('<', '>'), array(' <', '> '), $text));
-  $text = decode_entities($text);
+  $text = String::decodeEntities($text);
   $text_length = strlen($text);
 
   // Make a list of unique keywords that are actually found in the text,
@@ -664,7 +663,7 @@ function search_excerpt($keys, $text, $langcode = NULL) {
     // We didn't find any keyword matches, so just return the first part of the
     // text. We also need to re-encode any HTML special characters that we
     // entity-decoded above.
-    return String::checkPlain(truncate_utf8($text, 256, TRUE, TRUE));
+    return String::checkPlain(Unicode::truncate($text, 256, TRUE, TRUE));
   }
 
   // Sort the text ranges by starting position.

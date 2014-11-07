@@ -42,13 +42,12 @@ foreach (array(__DIR__ . '/../../autoload.php', __DIR__ . '/vendor/autoload.php'
     }
 }
 
-unset($file);
-
 if (!defined('PHPUNIT_COMPOSER_INSTALL')) {
-    echo 'You need to set up the project dependencies using the following commands:' . PHP_EOL .
+    die(
+        'You need to set up the project dependencies using the following commands:' . PHP_EOL .
         'wget http://getcomposer.org/composer.phar' . PHP_EOL .
-        'php composer.phar install' . PHP_EOL;
-    die(1);
+        'php composer.phar install' . PHP_EOL
+    );
 }
 
 require PHPUNIT_COMPOSER_INSTALL;

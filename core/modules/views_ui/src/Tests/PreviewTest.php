@@ -165,40 +165,54 @@ class PreviewTest extends UITestBase {
     $this->getPreviewAJAX('test_mini_pager', 'default', 3);
 
     // Test that the pager is present and rendered.
-    $elements = $this->xpath('//ul[@class = "pager"]/li');
+    $elements = $this->xpath('//ul[contains(@class, :class)]/li', array(':class' => 'pager__items'));
     $this->assertTrue(!empty($elements), 'Mini pager found.');
 
     // Verify elements and links to pages.
-    // We expect to find 3 elements: previous and current pages, with no link,
-    // and next page with a link.
-    $this->assertClass($elements[0], 'pager-previous', 'Element for previous page has .pager-previous class.');
-    $this->assertFalse(isset($elements[0]->a), 'Element for previous page has no link.');
+    // We expect to find current pages element with no link, next page element
+    // with a link, and not to find previous page element.
+    $this->assertClass($elements[0], 'is-active', 'Element for current page has .is-active class.');
 
-    $this->assertClass($elements[1], 'pager-current', 'Element for current page has .pager-current class.');
-    $this->assertFalse(isset($elements[1]->a), 'Element for current page has no link.');
-
-    $this->assertClass($elements[2], 'pager-next', "Element for next page has .pager-next class.");
-    $this->assertTrue($elements[2]->a, "Link to next page found.");
+    $this->assertClass($elements[1], 'pager__item--next', 'Element for next page has .pager__item--next class.');
+    $this->assertTrue($elements[1]->a, 'Link to next page found.');
 
     // Navigate to next page.
-    $elements = $this->xpath('//li[contains(@class, :class)]/a', array(':class' => 'pager-next'));
+    $elements = $this->xpath('//li[contains(@class, :class)]/a', array(':class' => 'pager__item--next'));
     $this->clickPreviewLinkAJAX($elements[0]['href'], 3);
 
     // Test that the pager is present and rendered.
-    $elements = $this->xpath('//ul[@class = "pager"]/li');
+    $elements = $this->xpath('//ul[contains(@class, :class)]/li', array(':class' => 'pager__items'));
     $this->assertTrue(!empty($elements), 'Mini pager found.');
 
     // Verify elements and links to pages.
     // We expect to find 3 elements: previous page with a link, current
     // page with no link, and next page with a link.
-    $this->assertClass($elements[0], 'pager-previous', 'Element for previous page has .pager-previous class.');
-    $this->assertTrue($elements[0]->a, "Link to previous page found.");
+    $this->assertClass($elements[0], 'pager__item--previous', 'Element for previous page has .pager__item--previous class.');
+    $this->assertTrue($elements[0]->a, 'Link to previous page found.');
 
-    $this->assertClass($elements[1], 'pager-current', 'Element for current page has .pager-current class.');
+    $this->assertClass($elements[1], 'is-active', 'Element for current page has .is-active class.');
     $this->assertFalse(isset($elements[1]->a), 'Element for current page has no link.');
 
-    $this->assertClass($elements[2], 'pager-next', "Element for next page has .pager-next class.");
-    $this->assertTrue($elements[2]->a, "Link to next page found.");
+    $this->assertClass($elements[2], 'pager__item--next', 'Element for next page has .pager__item--next class.');
+    $this->assertTrue($elements[2]->a, 'Link to next page found.');
+  }
+
+  /**
+   * Tests the additional information query info area.
+   */
+  public function testPreviewAdditionalInfo() {
+    \Drupal::moduleHandler()->install(array('views_ui_test'));
+    $this->resetAll();
+
+    $this->drupalGet('admin/structure/views/view/test_preview/edit');
+    $this->assertResponse(200);
+
+    $this->drupalPostForm(NULL, $edit = array(), t('Update preview'));
+
+    // Check for implementation of hook_views_preview_info_alter().
+    // @see views_ui_test.module
+    $elements = $this->xpath('//div[@id="views-live-preview"]/div[contains(@class, views-query-info)]//td[text()=:text]', array(':text' => t('Test row count')));
+    $this->assertEqual(count($elements), 1, 'Views Query Preview Info area altered.');
   }
 
   /**

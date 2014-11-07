@@ -27,7 +27,8 @@ use Symfony\Component\Routing\RouteCollection;
  *   title = @Translation("REST export"),
  *   help = @Translation("Create a REST export resource."),
  *   uses_route = TRUE,
- *   admin = @Translation("REST export")
+ *   admin = @Translation("REST export"),
+ *   returns_response = TRUE
  * )
  */
 class RestExport extends PathPluginBase {
@@ -270,7 +271,7 @@ class RestExport extends PathPluginBase {
     parent::execute();
 
     $output = $this->view->render();
-    return new Response(drupal_render($output), 200, array('Content-type' => $this->getMimeType()));
+    return new Response(drupal_render_root($output), 200, array('Content-type' => $this->getMimeType()));
   }
 
   /**

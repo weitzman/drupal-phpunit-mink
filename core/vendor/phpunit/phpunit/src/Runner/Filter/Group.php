@@ -71,9 +71,8 @@ abstract class PHPUnit_Runner_Filter_GroupFilterIterator extends RecursiveFilter
         foreach ($suite->getGroupDetails() as $group => $tests) {
             if (in_array($group, $groups)) {
                 $testHashes = array_map(
-                    function ($test) { return spl_object_hash($test);
-                    },
-                    $tests
+                  function ($test) { return spl_object_hash($test); },
+                  $tests
                 );
 
                 $this->groupTests = array_merge($this->groupTests, $testHashes);

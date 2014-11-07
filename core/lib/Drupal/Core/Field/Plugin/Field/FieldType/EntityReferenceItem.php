@@ -7,6 +7,8 @@
 
 namespace Drupal\Core\Field\Plugin\Field\FieldType;
 
+use Drupal\Core\Config\Entity\ConfigEntityType;
+use Drupal\Core\Entity\Entity;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\TypedData\EntityDataDefinition;
 use Drupal\Core\Field\FieldDefinitionInterface;
@@ -14,6 +16,7 @@ use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Field\FieldItemBase;
 use Drupal\Core\TypedData\DataDefinition;
 use Drupal\Core\TypedData\DataReferenceDefinition;
+use Drupal\entity_reference\Exception\MissingDefaultValueException;
 
 /**
  * Defines the 'entity_reference' entity field type.
@@ -65,16 +68,16 @@ class EntityReferenceItem extends FieldItemBase {
       // @todo: Lookup the entity type's ID data type and use it here.
       // https://drupal.org/node/2107249
       $target_id_definition = DataDefinition::create('integer')
-        ->setLabel(t('Entity ID'))
+        ->setLabel(t('@label ID', array($target_type_info->getLabel())))
         ->setSetting('unsigned', TRUE);
     }
     else {
       $target_id_definition = DataDefinition::create('string')
-        ->setLabel(t('Entity ID'));
+        ->setLabel(t('@label ID', array($target_type_info->getLabel())));
     }
     $properties['target_id'] = $target_id_definition;
     $properties['entity'] = DataReferenceDefinition::create('entity')
-      ->setLabel(t('Entity'))
+      ->setLabel($target_type_info->getLabel())
       ->setDescription(t('The referenced entity'))
       // The entity object is computed out of the entity ID.
       ->setComputed(TRUE)
@@ -193,8 +196,7 @@ class EntityReferenceItem extends FieldItemBase {
     if ($target_id !== NULL) {
       return FALSE;
     }
-    // Allow auto-create entities.
-    if ($this->hasUnsavedEntity()) {
+    if ($this->entity && $this->entity instanceof Entity) {
       return FALSE;
     }
     return TRUE;
@@ -206,6 +208,12 @@ class EntityReferenceItem extends FieldItemBase {
   public function preSave() {
     if ($this->hasUnsavedEntity()) {
       $this->entity->save();
+    }
+    // Handle the case where an unsaved entity was directly set using the public
+    // 'entity' property and then saved before this entity. In this case
+    // ::hasUnsavedEntity() will return FALSE but $this->target_id will still be
+    // empty.
+    if (empty($this->target_id) && $this->entity) {
       $this->target_id = $this->entity->id();
     }
   }
@@ -234,6 +242,29 @@ class EntityReferenceItem extends FieldItemBase {
    */
   public function hasUnsavedEntity() {
     return $this->target_id === NULL && ($entity = $this->entity) && $entity->isNew();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function calculateDependencies(FieldDefinitionInterface $field_definition) {
+    $dependencies = [];
+
+    if (is_array($field_definition->default_value) && count($field_definition->default_value)) {
+      $target_entity_type = \Drupal::entityManager()->getDefinition($field_definition->getFieldStorageDefinition()->getSetting('target_type'));
+      $key = $target_entity_type instanceof ConfigEntityType ? 'config' : 'content';
+      foreach ($field_definition->default_value as $default_value) {
+        if (is_array($default_value) && isset($default_value['target_uuid'])) {
+          $entity = \Drupal::entityManager()->loadEntityByUuid($target_entity_type->id(), $default_value['target_uuid']);
+          // If the entity does not exist do not create the dependency.
+          // @see \Drupal\Core\Field\EntityReferenceFieldItemList::processDefaultValue()
+          if ($entity) {
+            $dependencies[$key][] = $entity->getConfigDependencyName();
+          }
+        }
+      }
+    }
+    return $dependencies;
   }
 
 }

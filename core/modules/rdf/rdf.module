@@ -250,7 +250,6 @@ function rdf_theme() {
   return array(
     'rdf_metadata' => array(
       'variables' => array('metadata' => array()),
-      'template' => 'rdf-metadata',
     ),
   );
 }
@@ -367,7 +366,7 @@ function rdf_preprocess_user(&$variables) {
           'lang' => '',
         ),
       );
-      drupal_add_html_head($username_meta, 'rdf_user_username');
+      $variables['#attached']['html_head'][] = [$username_meta, 'rdf_user_username'];
     }
   }
 }
@@ -499,14 +498,14 @@ function rdf_preprocess_comment(&$variables) {
   }
   // Adds RDF metadata markup above comment body.
   if (!empty($variables['rdf_metadata_attributes'])) {
-    if (!isset($variables['content']['comment_body']['#prefix'])) {
-      $variables['content']['comment_body']['#prefix'] = '';
-    }
     $rdf_metadata = array(
       '#theme' => 'rdf_metadata',
       '#metadata' => $variables['rdf_metadata_attributes'],
     );
-    $variables['content']['comment_body']['#prefix'] = drupal_render($rdf_metadata) . $variables['content']['comment_body']['#prefix'];
+    if (!empty($variables['content']['comment_body']['#prefix'])) {
+      $rdf_metadata['#suffix'] = $variables['content']['comment_body']['#prefix'];
+    }
+    $variables['content']['comment_body']['#prefix'] = drupal_render($rdf_metadata);
   }
 }
 

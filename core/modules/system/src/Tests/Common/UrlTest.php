@@ -39,15 +39,10 @@ class UrlTest extends WebTestBase {
     $sanitized_path = check_url(_url($path));
     $this->assertTrue(strpos($link, $sanitized_path) !== FALSE, format_string('XSS attack @path was filtered by _l().', array('@path' => $path)));
 
-    // Test #type 'link'.
-    $link_array =  array(
-      '#type' => 'link',
-      '#title' => $this->randomMachineName(),
-      '#href' => $path,
-    );
-    $type_link = drupal_render($link_array);
+    // Test _url().
+    $link = _url($path);
     $sanitized_path = check_url(_url($path));
-    $this->assertTrue(strpos($type_link, $sanitized_path) !== FALSE, format_string('XSS attack @path was filtered by #theme', array('@path' => $path)));
+    $this->assertTrue(strpos($link, $sanitized_path) !== FALSE, format_string('XSS attack @path was filtered by #theme', ['@path' => $path]));
   }
 
   /**
@@ -61,10 +56,10 @@ class UrlTest extends WebTestBase {
       '#options' => array(
         'language' => $language,
       ),
-      '#href' => 'http://drupal.org',
+      '#url' => Url::fromUri('http://drupal.org'),
       '#title' => 'bar',
     );
-    $langcode = $language->id;
+    $langcode = $language->getId();
 
     // Test that the default hreflang handling for links does not override a
     // hreflang attribute explicitly set in the render array.
@@ -123,7 +118,7 @@ class UrlTest extends WebTestBase {
     $type_link = array(
       '#type' => 'link',
       '#title' => $this->randomMachineName(),
-      '#route_name' => '<current>',
+      '#url' => Url::fromRoute('<current>'),
       '#options' => array(
         'attributes' => array(
           'class' => array($class_theme),
@@ -139,18 +134,18 @@ class UrlTest extends WebTestBase {
    */
   function testLinkRenderArrayText() {
     // Build a link with _l() for reference.
-    $l = _l('foo', 'http://drupal.org');
+    $l = \Drupal::l('foo', Url::fromUri('http://drupal.org'));
 
     // Test a renderable array passed to _l().
     $renderable_text = array('#markup' => 'foo');
-    $l_renderable_text = _l($renderable_text, 'http://drupal.org');
+    $l_renderable_text = \Drupal::l($renderable_text, Url::fromUri('http://drupal.org'));
     $this->assertEqual($l_renderable_text, $l);
 
     // Test a themed link with plain text 'text'.
     $type_link_plain_array = array(
       '#type' => 'link',
       '#title' => 'foo',
-      '#href' => 'http://drupal.org',
+      '#url' => Url::fromUri('http://drupal.org'),
     );
     $type_link_plain = drupal_render($type_link_plain_array);
     $this->assertEqual($type_link_plain, $l);
@@ -159,7 +154,7 @@ class UrlTest extends WebTestBase {
     $type_link_nested_array = array(
       '#type' => 'link',
       '#title' => array('#markup' => 'foo'),
-      '#href' => 'http://drupal.org',
+      '#url' => Url::fromUri('http://drupal.org'),
     );
     $type_link_nested = drupal_render($type_link_nested_array);
     $this->assertEqual($type_link_nested, $l);

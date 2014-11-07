@@ -51,14 +51,13 @@ class ConfigImportUITest extends WebTestBase {
     // Create new config entity.
     $original_dynamic_data = array(
       'uuid' => '30df59bd-7b03-4cf7-bb35-d42fc49f0651',
-      'langcode' => \Drupal::languageManager()->getDefaultLanguage()->id,
+      'langcode' => \Drupal::languageManager()->getDefaultLanguage()->getId(),
       'status' => TRUE,
       'dependencies' => array(),
       'id' => 'new',
       'label' => 'New',
       'weight' => 0,
       'style' => '',
-      'test_dependencies' => array(),
       'protected_property' => '',
     );
     $staging->write($dynamic_name, $original_dynamic_data);
@@ -228,14 +227,14 @@ class ConfigImportUITest extends WebTestBase {
 
     // Acquire a fake-lock on the import mechanism.
     $config_importer = $this->configImporter();
-    $this->container->get('lock')->acquire($config_importer::LOCK_ID);
+    $this->container->get('lock.persistent')->acquire($config_importer::LOCK_NAME);
 
     // Attempt to import configuration and verify that an error message appears.
     $this->drupalPostForm(NULL, array(), t('Import all'));
     $this->assertText(t('Another request may be synchronizing configuration already.'));
 
     // Release the lock, just to keep testing sane.
-    $this->container->get('lock')->release($config_importer::LOCK_ID);
+    $this->container->get('lock.persistent')->release($config_importer::LOCK_NAME);
 
     // Verify site name has not changed.
     $this->assertNotEqual($new_site_name, \Drupal::config('system.site')->get('name'));
@@ -367,7 +366,6 @@ class ConfigImportUITest extends WebTestBase {
       'label' => 'Primary',
       'weight' => 0,
       'style' => NULL,
-      'test_dependencies' => array(),
       'protected_property' => null,
     );
     $staging->write($name_primary, $values_primary);
@@ -377,13 +375,12 @@ class ConfigImportUITest extends WebTestBase {
       'status' => TRUE,
       // Add a dependency on primary, to ensure that is synced first.
       'dependencies' => array(
-        'entity' => array($name_primary),
+        'config' => array($name_primary),
       ),
       'id' => 'secondary',
       'label' => 'Secondary Sync',
       'weight' => 0,
       'style' => NULL,
-      'test_dependencies' => array(),
       'protected_property' => null,
     );
     $staging->write($name_secondary, $values_secondary);

@@ -5,9 +5,11 @@
  * API functions for installing modules and themes.
  */
 
+use Drupal\Component\Utility\Unicode;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\Component\Utility\Crypt;
 use Drupal\Component\Utility\OpCodeCache;
+use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Extension\ExtensionDiscovery;
 use Drupal\Core\Site\Settings;
@@ -609,7 +611,7 @@ function drupal_verify_profile($install_state) {
   if (count($missing_modules)) {
     $modules = array();
     foreach ($missing_modules as $module) {
-      $modules[] = '<span class="admin-missing">' . drupal_ucfirst($module) . '</span>';
+      $modules[] = '<span class="admin-missing">' . Unicode::ucfirst($module) . '</span>';
     }
     $requirements['required_modules'] = array(
       'title'       => t('Required modules'),
@@ -650,16 +652,6 @@ function drupal_install_system($install_state) {
   // Install System module and rebuild the newly available routes.
   $kernel->getContainer()->get('module_handler')->install(array('system'), FALSE);
   \Drupal::service('router.builder')->rebuild();
-
-  // DrupalKernel::prepareLegacyRequest() above calls into
-  // DrupalKernel::bootCode(), which primes file_get_stream_wrappers()'s static
-  // list of custom stream wrappers that are based on the currently enabled
-  // list of modules (none).
-  // @todo Custom stream wrappers of a new module have to be registered as soon
-  //   as the module is installed/enabled. Fix either ModuleHandler::install()
-  //   and/or DrupalKernel::updateModules().
-  // @see https://drupal.org/node/2028109
-  drupal_static_reset('file_get_stream_wrappers');
 
   // Ensure default language is saved.
   if (isset($install_state['parameters']['langcode'])) {
@@ -1019,11 +1011,14 @@ function drupal_check_module($module) {
     // Print any error messages
     foreach ($requirements as $requirement) {
       if (isset($requirement['severity']) && $requirement['severity'] == REQUIREMENT_ERROR) {
-        $message = $requirement['description'];
+        $message = SafeMarkup::escape($requirement['description']);
         if (isset($requirement['value']) && $requirement['value']) {
           $message .= ' (' . t('Currently using !item !version', array('!item' => $requirement['title'], '!version' => $requirement['value'])) . ')';
         }
-        drupal_set_message($message, 'error');
+        // The string was previously checked as safe or escaped properly with
+        // SafeMarkup::escape() method and the concatinated message string is
+        // designated safe by running through the t() function.
+        drupal_set_message(SafeMarkup::set($message), 'error');
       }
     }
     return FALSE;

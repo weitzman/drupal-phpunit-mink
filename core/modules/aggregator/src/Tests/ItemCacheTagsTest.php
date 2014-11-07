@@ -10,6 +10,7 @@ namespace Drupal\aggregator\Tests;
 use Drupal\aggregator\Entity\Feed;
 use Drupal\aggregator\Entity\Item;
 use Drupal\system\Tests\Entity\EntityCacheTagsTestBase;
+use Drupal\user\Entity\Role;
 
 /**
  * Tests the Item entity's cache tags.
@@ -36,7 +37,7 @@ class ItemCacheTagsTest extends EntityCacheTagsTestBase {
 
     // Give anonymous users permission to access feeds, so that we can verify
     // the cache tags of cached versions of feed items.
-    $user_role = entity_load('user_role', DRUPAL_ANONYMOUS_RID);
+    $user_role = Role::load(DRUPAL_ANONYMOUS_RID);
     $user_role->grantPermission('access news feeds');
     $user_role->save();
   }
@@ -71,7 +72,7 @@ class ItemCacheTagsTest extends EntityCacheTagsTestBase {
    */
   public function testEntityCreation() {
     // Create a cache entry that is tagged with a feed cache tag.
-    \Drupal::cache('render')->set('foo', 'bar', \Drupal\Core\Cache\CacheBackendInterface::CACHE_PERMANENT, $this->entity->getCacheTag());
+    \Drupal::cache('render')->set('foo', 'bar', \Drupal\Core\Cache\CacheBackendInterface::CACHE_PERMANENT, $this->entity->getCacheTags());
 
     // Verify a cache hit.
     $this->verifyRenderCache('foo', array('aggregator_feed:1'));

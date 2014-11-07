@@ -15,9 +15,6 @@ config_test_dynamic:
     style:
       type: string
       label: 'style'
-    test_dependencies:
-      type: config_dependencies
-      label: 'Configuration dependencies'
     protected_property:
       type: string
       label: 'Protected property'
@@ -66,6 +63,9 @@ config_test.types:
       type: boolean
       label: 'Boolean'
     float:
+      type: float
+      label: 'Float'
+    float_as_integer:
       type: float
       label: 'Float'
     exp:
