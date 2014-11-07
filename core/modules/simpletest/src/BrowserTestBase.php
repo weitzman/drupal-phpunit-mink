@@ -226,6 +226,9 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     // Get and set the domain of the environment we are running our test
     // coverage against.
     $domain = getenv('DOMAIN');
+    if (!$domain) {
+      throw new \InvalidArgumentException('You must provide a DOMAIN environment variable to run PHPUnit based functional tests.');
+    }
     $base_url = 'http://' . $domain;
     $_SERVER['HTTP_HOST'] = $domain;
 
