@@ -48,11 +48,11 @@ class BrowserTestBaseTest extends BrowserTestBase {
     $this->assertSession()->statusCodeEquals(200);
 
     // Ensure the form and text field exist.
-    $this->assertSession()->elementExists('css', 'form#example-form');
+    $this->assertSession()->elementExists('css', 'form#simpletest-test-example-form');
     $this->assertSession()->fieldExists('name');
 
     $edit = ['name' => 'Foobaz'];
-    $this->submitForm($edit, 'Save configuration', 'example-form');
+    $this->submitForm($edit, 'Save configuration', 'simpletest-test-example-form');
 
     $this->drupalGet('/simpletest/example-form');
     $this->assertSession()->fieldValueEquals('name', 'Foobaz');

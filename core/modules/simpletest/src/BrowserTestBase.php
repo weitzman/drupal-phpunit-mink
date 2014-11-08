@@ -8,10 +8,12 @@
 namespace Drupal\simpletest;
 
 use Behat\Mink\Exception\Exception;
+use Behat\Mink\Mink;
 use Behat\Mink\Session;
 use Behat\Mink\Element\Element;
 use Behat\Mink\Element\NodeElement;
 use Behat\Mink\Driver\GoutteDriver;
+use Drupal\Component\Utility\String;
 use Drupal\Core\Database\ConnectionNotDefinedException;
 use Drupal\Core\Database\Database;
 use Drupal\Core\DrupalKernel;
