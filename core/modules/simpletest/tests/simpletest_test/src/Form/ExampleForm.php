@@ -28,7 +28,7 @@ class ExampleForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form['name'] = [
       '#type' => 'textfield',
-      '#default_value' => \Drupal::config('simpletest.settings')->get('name'),
+      '#default_value' => \Drupal::config('simpletest_test.settings')->get('name'),
     ];
     return parent::buildForm($form, $form_state);
   }
@@ -39,7 +39,7 @@ class ExampleForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Normally this config object would be injected but this is a only a test
     // so...who cares?
-    \Drupal::config('simpletest_test.settings')->set('name', $form_state->getValue('name'));
+    \Drupal::config('simpletest_test.settings')->set('name', $form_state->getValue('name'))->save();
     parent::submitForm($form, $form_state);
   }
 
