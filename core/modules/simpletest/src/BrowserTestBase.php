@@ -308,7 +308,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    *   A new web-assert option for asserting the presence of elements with.
    */
   public function assertSession($name = NULL) {
-    return $this->mink->assertSession($name);
+    return new WebAssert($this->getSession($name));
   }
 
   /**
