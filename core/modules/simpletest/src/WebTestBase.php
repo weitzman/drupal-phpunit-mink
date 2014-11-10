@@ -9,15 +9,26 @@ namespace Drupal\simpletest;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Serialization\Yaml;
+use Drupal\Component\Utility\Crypt;
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Utility\String;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\DependencyInjection\YamlFileLoader;
 use Drupal\Core\DrupalKernel;
+use Drupal\Core\Database\Database;
+use Drupal\Core\Database\ConnectionNotDefinedException;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\Core\Session\UserSession;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\StreamWrapper\PublicStream;
+use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\block\Entity\Block;
+use Symfony\Component\HttpFoundation\Request;
+use Drupal\user\Entity\Role;
 
 /**
  * Test case for typical Drupal tests.
@@ -27,7 +38,6 @@ use Drupal\block\Entity\Block;
 abstract class WebTestBase extends TestBase {
 
   use AssertContentTrait;
-  use WebTestTrait;
 
   /**
    * The profile to install as a basis for testing.
@@ -493,6 +503,227 @@ abstract class WebTestBase extends TestBase {
   }
 
   /**
+   * Create a user with a given set of permissions.
+   *
+   * @param array $permissions
+   *   Array of permission names to assign to user. Note that the user always
+   *   has the default permissions derived from the "authenticated users" role.
+   * @param string $name
+   *   The user name.
+   *
+   * @return \Drupal\user\Entity\User|false
+   *   A fully loaded user object with pass_raw property, or FALSE if account
+   *   creation fails.
+   */
+  protected function drupalCreateUser(array $permissions = array(), $name = NULL) {
+    // Create a role with the given permission set, if any.
+    $rid = FALSE;
+    if ($permissions) {
+      $rid = $this->drupalCreateRole($permissions);
+      if (!$rid) {
+        return FALSE;
+      }
+    }
+
+    // Create a user assigned to that role.
+    $edit = array();
+    $edit['name']   = !empty($name) ? $name : $this->randomMachineName();
+    $edit['mail']   = $edit['name'] . '@example.com';
+    $edit['pass']   = user_password();
+    $edit['status'] = 1;
+    if ($rid) {
+      $edit['roles'] = array($rid);
+    }
+
+    $account = entity_create('user', $edit);
+    $account->save();
+
+    $this->assertTrue($account->id(), String::format('User created with name %name and pass %pass', array('%name' => $edit['name'], '%pass' => $edit['pass'])), 'User login');
+    if (!$account->id()) {
+      return FALSE;
+    }
+
+    // Add the raw password so that we can log in as this user.
+    $account->pass_raw = $edit['pass'];
+    return $account;
+  }
+
+  /**
+   * Creates a role with specified permissions.
+   *
+   * @param array $permissions
+   *   Array of permission names to assign to role.
+   * @param string $rid
+   *   (optional) The role ID (machine name). Defaults to a random name.
+   * @param string $name
+   *   (optional) The label for the role. Defaults to a random string.
+   * @param integer $weight
+   *   (optional) The weight for the role. Defaults NULL so that entity_create()
+   *   sets the weight to maximum + 1.
+   *
+   * @return string
+   *   Role ID of newly created role, or FALSE if role creation failed.
+   */
+  protected function drupalCreateRole(array $permissions, $rid = NULL, $name = NULL, $weight = NULL) {
+    // Generate a random, lowercase machine name if none was passed.
+    if (!isset($rid)) {
+      $rid = strtolower($this->randomMachineName(8));
+    }
+    // Generate a random label.
+    if (!isset($name)) {
+      // In the role UI role names are trimmed and random string can start or
+      // end with a space.
+      $name = trim($this->randomString(8));
+    }
+
+    // Check the all the permissions strings are valid.
+    if (!$this->checkPermissions($permissions)) {
+      return FALSE;
+    }
+
+    // Create new role.
+    $role = entity_create('user_role', array(
+      'id' => $rid,
+      'label' => $name,
+    ));
+    if (!is_null($weight)) {
+      $role->set('weight', $weight);
+    }
+    $result = $role->save();
+
+    $this->assertIdentical($result, SAVED_NEW, String::format('Created role ID @rid with name @name.', array(
+      '@name' => var_export($role->label(), TRUE),
+      '@rid' => var_export($role->id(), TRUE),
+    )), 'Role');
+
+    if ($result === SAVED_NEW) {
+      // Grant the specified permissions to the role, if any.
+      if (!empty($permissions)) {
+        user_role_grant_permissions($role->id(), $permissions);
+        $assigned_permissions = Role::load($role->id())->getPermissions();
+        $missing_permissions = array_diff($permissions, $assigned_permissions);
+        if (!$missing_permissions) {
+          $this->pass(String::format('Created permissions: @perms', array('@perms' => implode(', ', $permissions))), 'Role');
+        }
+        else {
+          $this->fail(String::format('Failed to create permissions: @perms', array('@perms' => implode(', ', $missing_permissions))), 'Role');
+        }
+      }
+      return $role->id();
+    }
+    else {
+      return FALSE;
+    }
+  }
+
+  /**
+   * Checks whether a given list of permission names is valid.
+   *
+   * @param array $permissions
+   *   The permission names to check.
+   *
+   * @return bool
+   *   TRUE if the permissions are valid, FALSE otherwise.
+   */
+  protected function checkPermissions(array $permissions) {
+    $available = array_keys(\Drupal::service('user.permissions')->getPermissions());
+    $valid = TRUE;
+    foreach ($permissions as $permission) {
+      if (!in_array($permission, $available)) {
+        $this->fail(String::format('Invalid permission %permission.', array('%permission' => $permission)), 'Role');
+        $valid = FALSE;
+      }
+    }
+    return $valid;
+  }
+
+  /**
+   * Log in a user with the internal browser.
+   *
+   * If a user is already logged in, then the current user is logged out before
+   * logging in the specified user.
+   *
+   * Please note that neither the current user nor the passed-in user object is
+   * populated with data of the logged in user. If you need full access to the
+   * user object after logging in, it must be updated manually. If you also need
+   * access to the plain-text password of the user (set by drupalCreateUser()),
+   * e.g. to log in the same user again, then it must be re-assigned manually.
+   * For example:
+   * @code
+   *   // Create a user.
+   *   $account = $this->drupalCreateUser(array());
+   *   $this->drupalLogin($account);
+   *   // Load real user object.
+   *   $pass_raw = $account->pass_raw;
+   *   $account = user_load($account->id());
+   *   $account->pass_raw = $pass_raw;
+   * @endcode
+   *
+   * @param \Drupal\Core\Session\AccountInterface $account
+   *   User object representing the user to log in.
+   *
+   * @see drupalCreateUser()
+   */
+  protected function drupalLogin(AccountInterface $account) {
+    if ($this->loggedInUser) {
+      $this->drupalLogout();
+    }
+
+    $edit = array(
+      'name' => $account->getUsername(),
+      'pass' => $account->pass_raw
+    );
+    $this->drupalPostForm('user/login', $edit, t('Log in'));
+
+    // @see WebTestBase::drupalUserIsLoggedIn()
+    if (isset($this->session_id)) {
+      $account->session_id = $this->session_id;
+    }
+    $pass = $this->assert($this->drupalUserIsLoggedIn($account), format_string('User %name successfully logged in.', array('%name' => $account->getUsername())), 'User login');
+    if ($pass) {
+      $this->loggedInUser = $account;
+      $this->container->get('current_user')->setAccount($account);
+    }
+  }
+
+  /**
+   * Returns whether a given user account is logged in.
+   *
+   * @param \Drupal\user\UserInterface $account
+   *   The user account object to check.
+   */
+  protected function drupalUserIsLoggedIn($account) {
+    if (!isset($account->session_id)) {
+      return FALSE;
+    }
+    // The session ID is hashed before being stored in the database.
+    // @see \Drupal\Core\Session\SessionHandler::read()
+    return (bool) db_query("SELECT sid FROM {users_field_data} u INNER JOIN {sessions} s ON u.uid = s.uid AND u.default_langcode = 1 WHERE s.sid = :sid", array(':sid' => Crypt::hashBase64($account->session_id)))->fetchField();
+  }
+
+  /**
+   * Logs a user out of the internal browser and confirms.
+   *
+   * Confirms logout by checking the login page.
+   */
+  protected function drupalLogout() {
+    // Make a request to the logout page, and redirect to the user page, the
+    // idea being if you were properly logged out you should be seeing a login
+    // screen.
+    $this->drupalGet('user/logout', array('query' => array('destination' => 'user/login')));
+    $this->assertResponse(200, 'User was logged out.');
+    $pass = $this->assertField('name', 'Username field found.', 'Logout');
+    $pass = $pass && $this->assertField('pass', 'Password field found.', 'Logout');
+
+    if ($pass) {
+      // @see WebTestBase::drupalUserIsLoggedIn()
+      unset($this->loggedInUser->session_id);
+      $this->loggedInUser = FALSE;
+      $this->container->get('current_user')->setAccount(new AnonymousUserSession());
+    }
+  }
+
+  /**
    * Returns the session name in use on the child site.
    *
    * @return string
@@ -698,6 +929,80 @@ abstract class WebTestBase extends TestBase {
   }
 
   /**
+   * Returns the parameters that will be used when Simpletest installs Drupal.
+   *
+   * @see install_drupal()
+   * @see install_state_defaults()
+   */
+  protected function installParameters() {
+    $connection_info = Database::getConnectionInfo();
+    $driver = $connection_info['default']['driver'];
+    $connection_info['default']['prefix'] = $connection_info['default']['prefix']['default'];
+    unset($connection_info['default']['driver']);
+    unset($connection_info['default']['namespace']);
+    unset($connection_info['default']['pdo']);
+    unset($connection_info['default']['init_commands']);
+    $parameters = array(
+      'interactive' => FALSE,
+      'parameters' => array(
+        'profile' => $this->profile,
+        'langcode' => 'en',
+      ),
+      'forms' => array(
+        'install_settings_form' => array(
+          'driver' => $driver,
+          $driver => $connection_info['default'],
+        ),
+        'install_configure_form' => array(
+          'site_name' => 'Drupal',
+          'site_mail' => 'simpletest@example.com',
+          'account' => array(
+            'name' => $this->root_user->name,
+            'mail' => $this->root_user->getEmail(),
+            'pass' => array(
+              'pass1' => $this->root_user->pass_raw,
+              'pass2' => $this->root_user->pass_raw,
+            ),
+          ),
+          // \Drupal\Core\Render\Element\Checkboxes::valueCallback() requires
+          // NULL instead of FALSE values for programmatic form submissions to
+          // disable a checkbox.
+          'update_status_module' => array(
+            1 => NULL,
+            2 => NULL,
+          ),
+        ),
+      ),
+    );
+
+    // If we only have one db driver available, we cannot set the driver.
+    include_once DRUPAL_ROOT . '/core/includes/install.inc';
+    if (count(drupal_get_database_types()) == 1) {
+      unset($parameters['forms']['install_settings_form']['driver']);
+    }
+    return $parameters;
+  }
+
+  /**
+   * Rewrites the settings.php file of the test site.
+   *
+   * @param array $settings
+   *   An array of settings to write out, in the format expected by
+   *   drupal_rewrite_settings().
+   *
+   * @see drupal_rewrite_settings()
+   */
+  protected function writeSettings(array $settings) {
+    include_once DRUPAL_ROOT . '/core/includes/install.inc';
+    $filename = $this->siteDirectory . '/settings.php';
+    // system_requirements() removes write permissions from settings.php
+    // whenever it is invoked.
+    // Not using File API; a potential error must trigger a PHP warning.
+    chmod($filename, 0666);
+    drupal_rewrite_settings($settings, $filename);
+  }
+
+  /**
    * Changes parameters in the services.yml file.
    *
    * @param $name
@@ -777,6 +1082,80 @@ abstract class WebTestBase extends TestBase {
     if (!empty($settings)) {
       $this->writeSettings($settings);
     }
+  }
+
+  /**
+   * Rebuilds \Drupal::getContainer().
+   *
+   * Use this to build a new kernel and service container. For example, when the
+   * list of enabled modules is changed via the internal browser, in which case
+   * the test process still contains an old kernel and service container with an
+   * old module list.
+   *
+   * @see TestBase::prepareEnvironment()
+   * @see TestBase::restoreEnvironment()
+   *
+   * @todo Fix https://www.drupal.org/node/2021959 so that module enable/disable
+   *   changes are immediately reflected in \Drupal::getContainer(). Until then,
+   *   tests can invoke this workaround when requiring services from newly
+   *   enabled modules to be immediately available in the same request.
+   */
+  protected function rebuildContainer() {
+    // Maintain the current global request object.
+    $request = \Drupal::request();
+    // Rebuild the kernel and bring it back to a fully bootstrapped state.
+    $this->container = $this->kernel->rebuildContainer();
+
+    // Make sure the url generator has a request object, otherwise calls to
+    // $this->drupalGet() will fail.
+    $this->prepareRequestForGenerator();
+  }
+
+  /**
+   * Resets all data structures after having enabled new modules.
+   *
+   * This method is called by \Drupal\simpletest\WebTestBase::setUp() after
+   * enabling the requested modules. It must be called again when additional
+   * modules are enabled later.
+   */
+  protected function resetAll() {
+    // Clear all database and static caches and rebuild data structures.
+    drupal_flush_all_caches();
+    $this->container = \Drupal::getContainer();
+
+    // Reset static variables and reload permissions.
+    $this->refreshVariables();
+  }
+
+  /**
+   * Refreshes in-memory configuration and state information.
+   *
+   * Useful after a page request is made that changes configuration or state in
+   * a different thread.
+   *
+   * In other words calling a settings page with $this->drupalPostForm() with a
+   * changed value would update configuration to reflect that change, but in the
+   * thread that made the call (thread running the test) the changed values
+   * would not be picked up.
+   *
+   * This method clears the cache and loads a fresh copy.
+   */
+  protected function refreshVariables() {
+    // Clear the tag cache.
+    // @todo Replace drupal_static() usage within classes and provide a
+    //   proper interface for invoking reset() on a cache backend:
+    //   https://www.drupal.org/node/2311945.
+    drupal_static_reset('Drupal\Core\Cache\CacheBackendInterface::tagCache');
+    drupal_static_reset('Drupal\Core\Cache\DatabaseBackend::deletedTags');
+    drupal_static_reset('Drupal\Core\Cache\DatabaseBackend::invalidatedTags');
+    foreach (Cache::getBins() as $backend) {
+      if (is_callable(array($backend, 'reset'))) {
+        $backend->reset();
+      }
+    }
+
+    $this->container->get('config.factory')->reset();
+    $this->container->get('state')->resetCache();
   }
 
   /**
@@ -1892,6 +2271,37 @@ abstract class WebTestBase extends TestBase {
   }
 
   /**
+   * Takes a path and returns an absolute path.
+   *
+   * @param $path
+   *   A path from the internal browser content.
+   *
+   * @return
+   *   The $path with $base_url prepended, if necessary.
+   */
+  protected function getAbsoluteUrl($path) {
+    global $base_url, $base_path;
+
+    $parts = parse_url($path);
+    if (empty($parts['host'])) {
+      // Ensure that we have a string (and no xpath object).
+      $path = (string) $path;
+      // Strip $base_path, if existent.
+      $length = strlen($base_path);
+      if (substr($path, 0, $length) === $base_path) {
+        $path = substr($path, $length);
+      }
+      // Ensure that we have an absolute path.
+      if ($path[0] !== '/') {
+        $path = '/' . $path;
+      }
+      // Finally, prepend the $base_url.
+      $path = $base_url . $path;
+    }
+    return $path;
+  }
+
+  /**
    * Get the current URL from the cURL handler.
    *
    * @return
@@ -2257,4 +2667,54 @@ abstract class WebTestBase extends TestBase {
     }
   }
 
+  /**
+   * Creates a mock request and sets it on the generator.
+   *
+   * This is used to manipulate how the generator generates paths during tests.
+   * It also ensures that calls to $this->drupalGet() will work when running
+   * from run-tests.sh because the url generator no longer looks at the global
+   * variables that are set there but relies on getting this information from a
+   * request object.
+   *
+   * @param bool $clean_urls
+   *   Whether to mock the request using clean urls.
+   * @param $override_server_vars
+   *   An array of server variables to override.
+   *
+   * @return $request
+   *   The mocked request object.
+   */
+  protected function prepareRequestForGenerator($clean_urls = TRUE, $override_server_vars = array()) {
+    $request = Request::createFromGlobals();
+    $server = $request->server->all();
+    if (basename($server['SCRIPT_FILENAME']) != basename($server['SCRIPT_NAME'])) {
+      // We need this for when the test is executed by run-tests.sh.
+      // @todo Remove this once run-tests.sh has been converted to use a Request
+      //   object.
+      $cwd = getcwd();
+      $server['SCRIPT_FILENAME'] = $cwd . '/' . basename($server['SCRIPT_NAME']);
+      $base_path = rtrim($server['REQUEST_URI'], '/');
+    }
+    else {
+      $base_path = $request->getBasePath();
+    }
+    if ($clean_urls) {
+      $request_path = $base_path ? $base_path . '/user' : 'user';
+    }
+    else {
+      $request_path = $base_path ? $base_path . '/index.php/user' : '/index.php/user';
+    }
+    $server = array_merge($server, $override_server_vars);
+
+    $request = Request::create($request_path, 'GET', array(), array(), array(), $server);
+    $this->container->get('request_stack')->push($request);
+
+    // The request context is normally set by the router_listener from within
+    // its KernelEvents::REQUEST listener. In the simpletest parent site this
+    // event is not fired, therefore it is necessary to updated the request
+    // context manually here.
+    $this->container->get('router.request_context')->fromRequest($request);
+
+    return $request;
+  }
 }
