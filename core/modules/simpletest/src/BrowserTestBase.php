@@ -225,12 +225,36 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
 
     // Get and set the domain of the environment we are running our test
     // coverage against.
-    $domain = getenv('DOMAIN');
-    if (!$domain) {
-      throw new \InvalidArgumentException('You must provide a DOMAIN environment variable to run PHPUnit based functional tests.');
+    $base_url = getenv('SIMPLETEST_BASE_URL');
+    if (!$base_url) {
+      throw new \InvalidArgumentException('You must provide a SIMPLETEST_BASE_URL environment variable to run PHPUnit based functional tests.');
     }
-    $base_url = 'http://' . $domain;
-    $_SERVER['HTTP_HOST'] = $domain;
+
+    // Setup $_SERVER variable.
+    $parsed_url = parse_url($base_url);
+    $host = $parsed_url['host'] . (isset($parsed_url['port']) ? ':' . $parsed_url['port'] : '');
+    $path = isset($parsed_url['path']) ? rtrim(rtrim($parsed_url['path']), '/') : '';
+    $port = (isset($parsed_url['port']) ? $parsed_url['port'] : 80);
+    if ($path == '/') {
+      $path = '';
+    }
+    // If the passed URL schema is 'https' then setup the $_SERVER variables
+    // properly so that testing will run under HTTPS.
+    if ($parsed_url['scheme'] == 'https') {
+      $_SERVER['HTTPS'] = 'on';
+    }
+    $_SERVER['HTTP_HOST'] = $host;
+    $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+    $_SERVER['SERVER_ADDR'] = '127.0.0.1';
+    $_SERVER['SERVER_PORT'] = $port;
+    $_SERVER['SERVER_SOFTWARE'] = NULL;
+    $_SERVER['SERVER_NAME'] = 'localhost';
+    $_SERVER['REQUEST_URI'] = $path .'/';
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+    $_SERVER['SCRIPT_NAME'] = $path .'/index.php';
+    $_SERVER['SCRIPT_FILENAME'] = $path .'/index.php';
+    $_SERVER['PHP_SELF'] = $path .'/index.php';
+    $_SERVER['HTTP_USER_AGENT'] = 'Drupal command line';
 
     // Install drupal test site.
     $this->prepareEnvironment();
@@ -346,6 +370,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     else {
       $url = $this->getAbsoluteUrl($path);
     }
+    echo 'drupalGet url=', $url, PHP_EOL;
     $session = $this->getSession();
 
     $this->prepareRequest();
