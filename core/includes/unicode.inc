@@ -113,29 +113,6 @@ function drupal_xml_parser_create(&$data) {
 }
 
 /**
- * Converts data to UTF-8.
- *
- * @param string $data
- *   The data to be converted.
- * @param string $encoding
- *   The encoding that the data is in.
- *
- * @return string|bool
- *   Converted data or FALSE.
- *
- * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.0.
- *   Use \Drupal\Component\Utility\Unicode::convertToUtf8().
- */
-function drupal_convert_to_utf8($data, $encoding) {
-  $out = Unicode::convertToUtf8($data, $encoding);
-  if ($out === FALSE) {
-    \Drupal::logger('php')->error('Unsupported encoding %s. Please install iconv, GNU recode or mbstring for PHP.', array('%s' => $encoding));
-  }
-
-  return $out;
-}
-
-/**
  * Truncates a UTF-8-encoded string safely to a number of bytes.
  *
  * @param string $string
@@ -151,59 +128,4 @@ function drupal_convert_to_utf8($data, $encoding) {
  */
 function drupal_truncate_bytes($string, $len) {
   return Unicode::truncateBytes($string, $len);
-}
-
-/**
- * Encodes MIME/HTTP header values that contain incorrectly encoded characters.
- *
- * @param $string
- *   The header to encode.
- *
- * @return string
- *   The mime-encoded header.
- *
- * @see mime_header_decode()
- * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.0.
- *   Use \Drupal\Component\Utility\Unicode::mimeHeaderEncode().
- */
-function mime_header_encode($string) {
-  return Unicode::mimeHeaderEncode($string);
-}
-
-/**
- * Decodes MIME/HTTP encoded header values.
- *
- * @param $header
- *   The header to decode.
- *
- * @return string
- *   The mime-decoded header.
- *
- * @see mime_header_encode()
- * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.0.
- *   Use \Drupal\Component\Utility\Unicode::mimeHeaderDecode().
- */
-function mime_header_decode($header) {
-  return Unicode::mimeHeaderDecode($header);
-}
-
-/**
- * Cuts off a piece of a string based on character indices and counts.
- *
- * @param $text
- *   The input string.
- * @param $start
- *   The position at which to start reading.
- * @param $length
- *   The number of characters to read.
- *
- * @return string
- *   The shortened string.
- *
- * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.0.
- *   Use \Drupal\Component\Utility\Unicode::substr().
- * @ingroup php_wrappers
- */
-function drupal_substr($text, $start, $length = NULL) {
-  return Unicode::substr($text, $start, $length);
 }

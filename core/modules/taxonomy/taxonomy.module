@@ -398,16 +398,6 @@ function taxonomy_term_load_parents($tid) {
 }
 
 /**
- * Find all ancestors of a given term ID.
- *
- * @deprecated in Drupal 8.x-dev, will be removed before Drupal 8.0.
- *   Use \Drupal\taxonomy\TermStorageController::loadAllParents()
- */
-function taxonomy_term_load_parents_all($tid) {
-  return \Drupal::entityManager()->getStorage('taxonomy_term')->loadAllParents($tid);
-}
-
-/**
  * Finds all children of a term ID.
  *
  * @param $tid
@@ -629,7 +619,7 @@ function taxonomy_autocomplete_validate($element, FormStateInterface $form_state
   if ($tags = $element['#value']) {
     $typed_terms = Tags::explode($tags);
   }
-  form_set_value($element, $typed_terms, $form_state);
+  $form_state->setValueForElement($element, $typed_terms);
 }
 
 /**
