@@ -4,3 +4,9 @@ simpletest.settings:
       _content: '\Drupal\simpletest_test\Controller\SimpletestController::hello'
   requirements:
     _access: 'TRUE'
+simpletest.example_form:
+  path: '/simpletest/example-form'
+  defaults:
+    _form: '\Drupal\simpletest_test\Form\ExampleForm'
+  requirements:
+    _access: 'TRUE'

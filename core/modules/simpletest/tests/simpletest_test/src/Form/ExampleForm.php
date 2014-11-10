@@ -7,13 +7,13 @@
 
 namespace Drupal\simpletest_test\Form;
 
-use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Provides an example form for testing \Drupal\simpletest\BrowserTestBase.
  */
-class ExampleForm extends FormBase {
+class ExampleForm extends ConfigFormBase {
 
   /**
    * {@inheritdoc}
@@ -26,14 +26,21 @@ class ExampleForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    // TODO: Implement buildForm() method.
+    $form['name'] = [
+      '#type' => 'textfield',
+      '#default_value' => \Drupal::config('simpletest_test.settings')->get('name'),
+    ];
+    return parent::buildForm($form, $form_state);
   }
 
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // TODO: Implement submitForm() method.
+    // Normally this config object would be injected but this is a only a test
+    // so...who cares?
+    \Drupal::config('simpletest_test.settings')->set('name', $form_state->getValue('name'))->save();
+    parent::submitForm($form, $form_state);
   }
 
 }
