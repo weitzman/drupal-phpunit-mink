@@ -1,0 +1,9 @@
+# Schema for the configuration files of the Simpletest test module.
+
+simpletest_test.settings:
+  type: mapping
+  label: 'Testing the testers'
+  mapping:
+    name:
+      type: string
+      label: 'A test config value'
