@@ -28,10 +28,11 @@ class BrowserTestBaseTest extends BrowserTestBase {
    * Tests basic page test.
    */
   public function testGoTo() {
-    // Visit a drupal page.
-    $this->drupalGet('/simpletest/hello');
+    $account = $this->drupalCreateUser(array('simpletest_test access tests'));
+    $this->drupalLogin($account);
 
-    // Test response code.
+    // Visit a Drupal page that requires login.
+    $this->drupalGet('/simpletest/hello');
     $this->assertSession()->statusCodeEquals(200);
 
     // Test page contains some text.
@@ -42,9 +43,9 @@ class BrowserTestBaseTest extends BrowserTestBase {
    * Tests basic form functionality.
    */
   public function testForm() {
-    $this->drupalGet('/simpletest/example-form');
 
     // Ensure the proper response code for a _form route.
+    $this->drupalGet('simpletest/example-form');
     $this->assertSession()->statusCodeEquals(200);
 
     // Ensure the form and text field exist.
