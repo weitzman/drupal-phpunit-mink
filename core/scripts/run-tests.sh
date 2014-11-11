@@ -337,7 +337,7 @@ function simpletest_script_init() {
     }
   }
 
-  if ($_SERVER['HTTPS'] === 'on') {
+  if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
     $base_url = 'https://';
   }
   else {
