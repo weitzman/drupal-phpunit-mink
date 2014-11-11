@@ -597,8 +597,8 @@ function simpletest_script_execute_batch($test_classes) {
 /**
  * Run a group of phpunit tests.
  */
-function simpletest_script_run_phpunit($test_id, $class, $additional_arguments = array()) {
-  $results = simpletest_run_phpunit_tests($test_id, array($class), $additional_arguments);
+function simpletest_script_run_phpunit($test_id, $class) {
+  $results = simpletest_run_phpunit_tests($test_id, array($class));
   simpletest_process_phpunit_results($results);
 
   // Map phpunit results to a data structure we can pass to
