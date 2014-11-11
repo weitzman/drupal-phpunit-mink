@@ -15,6 +15,7 @@ use Behat\Mink\Element\NodeElement;
 use Behat\Mink\Driver\GoutteDriver;
 use Drupal\Component\Utility\Crypt;
 use Drupal\Component\Utility\Random;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Database\ConnectionNotDefinedException;
 use Drupal\Core\Database\Database;
 use Drupal\Core\DrupalKernel;
@@ -585,11 +586,11 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    *   TRUE if the permissions are valid, FALSE otherwise.
    */
   protected function checkPermissions(array $permissions) {
-    $available = array_keys(\Drupal::moduleHandler()->invokeAll('permission'));
+    $available = array_keys(\Drupal::service('user.permissions')->getPermissions());
     $valid = TRUE;
     foreach ($permissions as $permission) {
       if (!in_array($permission, $available)) {
-        $this->fail(String::format('Invalid permission %permission.', array('%permission' => $permission)), 'Role');
+        $this->fail(String::format('Invalid permission %permission.', array('%permission' => $permission)));
         $valid = FALSE;
       }
     }
@@ -636,13 +637,10 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
 
     // @see WebTestBase::drupalUserIsLoggedIn()
     $account->session_id = $this->getSession()->getCookie(session_name());
-    $this->assertTrue($this->drupalUserIsLoggedIn($account), sprintf('User %s successfully logged in.', $account->getUsername()));
+    $this->assertTrue($this->drupalUserIsLoggedIn($account), String::format('User %name successfully logged in.', array('name' => $account->getUsername())));
 
     $this->loggedInUser = $account;
     $this->container->get('current_user')->setAccount($account);
-    // @todo Temporary workaround for not being able to use synchronized
-    //   services in non dumped container.
-    $this->container->get('access_subscriber')->setCurrentUser($account);
   }
 
   /**
@@ -660,7 +658,7 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     $assert_session->fieldExists('name');
     $assert_session->fieldExists('pass');
 
-    // @see WebTestBase::drupalUserIsLoggedIn()
+    // @see BrowserTestBase::drupalUserIsLoggedIn()
     unset($this->loggedInUser->session_id);
     $this->loggedInUser = FALSE;
     $this->container->get('current_user')->setAccount(new AnonymousUserSession());
@@ -1105,12 +1103,6 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     unset($GLOBALS['config_directories']);
     unset($GLOBALS['config']);
     unset($GLOBALS['conf']);
-    unset($GLOBALS['theme_key']);
-    unset($GLOBALS['theme']);
-    unset($GLOBALS['theme_info']);
-    unset($GLOBALS['base_theme_info']);
-    unset($GLOBALS['theme_engine']);
-    unset($GLOBALS['theme_path']);
 
     // Log fatal errors.
     ini_set('log_errors', 1);
@@ -1193,8 +1185,8 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    * the test process still contains an old kernel and service container with an
    * old module list.
    *
-   * @see TestBase::prepareEnvironment()
-   * @see TestBase::restoreEnvironment()
+   * @see BrowserTestBase::prepareEnvironment()
+   * @see BrowserTestBase::restoreEnvironment()
    *
    * @todo Fix https://www.drupal.org/node/2021959 so that module enable/disable
    *   changes are immediately reflected in \Drupal::getContainer(). Until then,
@@ -1206,12 +1198,6 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     $request = \Drupal::request();
     // Rebuild the kernel and bring it back to a fully bootstrapped state.
     $this->container = $this->kernel->rebuildContainer();
-
-    // The request context is normally set by the router_listener from within
-    // its KernelEvents::REQUEST listener. In the simpletest parent site this
-    // event is not fired, therefore it is necessary to updated the request
-    // context manually here.
-    $this->container->get('router.request_context')->fromRequest($request);
 
     // Make sure the url generator has a request object, otherwise calls to
     // $this->drupalGet() will fail.
@@ -1300,9 +1286,17 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
    */
   protected function refreshVariables() {
     // Clear the tag cache.
+    // @todo Replace drupal_static() usage within classes and provide a
+    //   proper interface for invoking reset() on a cache backend:
+    //   https://www.drupal.org/node/2311945.
     drupal_static_reset('Drupal\Core\Cache\CacheBackendInterface::tagCache');
     drupal_static_reset('Drupal\Core\Cache\DatabaseBackend::deletedTags');
     drupal_static_reset('Drupal\Core\Cache\DatabaseBackend::invalidatedTags');
+    foreach (Cache::getBins() as $backend) {
+      if (is_callable(array($backend, 'reset'))) {
+        $backend->reset();
+      }
+    }
 
     $this->container->get('config.factory')->reset();
     $this->container->get('state')->resetCache();
