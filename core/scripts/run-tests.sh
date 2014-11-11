@@ -337,7 +337,17 @@ function simpletest_script_init() {
     }
   }
 
-  putenv('SIMPLETEST_BASE_URL=http://' . $host . ':' . $port . '/' . $path . '/');
+  if ($_SERVER['HTTPS'] === 'on') {
+    $base_url = 'https://';
+  }
+  else {
+    $base_url = 'http://';
+  }
+  $base_url .= $host;
+  if ($path !== '') {
+    $base_url .= $path;
+  }
+  putenv('SIMPLETEST_BASE_URL=' . $base_url);
   $_SERVER['HTTP_HOST'] = $host;
   $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
   $_SERVER['SERVER_ADDR'] = '127.0.0.1';
