@@ -371,7 +371,6 @@ abstract class BrowserTestBase extends \PHPUnit_Framework_TestCase {
     else {
       $url = $this->getAbsoluteUrl($path);
     }
-    echo 'drupalGet url=', $url, PHP_EOL; // @todo remove
     $session = $this->getSession();
 
     $this->prepareRequest();
